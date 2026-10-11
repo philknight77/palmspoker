@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Palms Poker — свали приложението</title>
+<meta name="description" content="Турнири на живо, лайв клок, твоите резултати и Membership картата ти — Palms Royale Sofia.">
+<meta property="og:title" content="Palms Poker">
+<meta property="og:description" content="Турнири на живо, лайв клок, твоите резултати и Membership картата ти.">
+<meta property="og:image" content="https://philknight77.github.io/palmspoker/og.png">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0b1530">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  :root {
+    --bg1: #16284e; --bg2: #070d1c; --card: rgba(255,255,255,0.05); --line: rgba(255,255,255,0.12);
+    --text: #eef1f7; --sec: #9aa6bd; --gold: #e9c46a; --gold2: #f7e27a; --red: #c1202e;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh; color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(ellipse at 50% 30%, #2a3a64 0%, transparent 60%), linear-gradient(180deg, var(--bg1), var(--bg2));
+    background-attachment: fixed;
+  }
+  main { max-width: 460px; margin: 0 auto; padding: 36px 20px 48px; text-align: center; }
+  .lang { position: absolute; top: 14px; right: 16px; }
+  .lang button { background: none; border: 1px solid var(--line); color: var(--sec); border-radius: 14px;
+    padding: 5px 10px; font-size: 13px; margin-left: 4px; cursor: pointer; }
+  .lang button.on { color: var(--gold); border-color: var(--gold); }
+  .logo { width: 132px; height: 132px; border-radius: 30px; box-shadow: 0 14px 40px rgba(0,0,0,.5), 0 0 60px rgba(233,196,106,.18); }
+  h1 { font-size: 30px; margin: 22px 0 4px; letter-spacing: .5px; }
+  .tag { color: var(--sec); font-size: 15px; margin: 0 0 26px; line-height: 1.45; }
+  .rule { width: 64px; height: 4px; background: var(--red); border-radius: 2px; margin: 14px auto 0; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-top: 14px; text-align: left; }
+  .box h2 { font-size: 16px; margin: 0 0 12px; color: var(--gold); letter-spacing: .3px; }
+  .step { display: flex; gap: 12px; align-items: flex-start; margin: 14px 0; }
+  .num { flex: 0 0 28px; height: 28px; border-radius: 14px; background: var(--gold); color: #1c1406;
+    font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .step p { margin: 3px 0 8px; font-size: 15px; line-height: 1.4; }
+  .btn { display: block; text-align: center; text-decoration: none; font-weight: 800; font-size: 16px;
+    padding: 14px 16px; border-radius: 14px; color: #1c1406;
+    background: linear-gradient(135deg, #b07a10, var(--gold) 40%, var(--gold2) 55%, #d8a82a); box-shadow: 0 6px 20px rgba(233,196,106,.25); }
+  .btn.alt { background: none; color: var(--gold); border: 1.5px solid var(--gold); box-shadow: none; }
+  .note { color: var(--sec); font-size: 13px; line-height: 1.45; margin: 10px 0 0; }
+  .warn { color: #ffd27a; }
+  .hidden { display: none; }
+  .other { margin-top: 18px; font-size: 14px; }
+  .other a { color: var(--sec); }
+  footer { color: #6c7995; font-size: 12px; margin-top: 30px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="lang"><button data-l="bg">BG</button><button data-l="en">EN</button></div>
+<main>
+  <img class="logo" src="icon.png" alt="Palms Poker">
+  <h1>Palms Poker</h1>
+  <div class="rule"></div>
+  <p class="tag" data-bg="Турнирите на живо, лайв клокът, твоите резултати и Membership картата ти — в едно приложение."
+                 data-en="Live tournaments, the live clock, your own results and your membership card — in one app."></p>
+
+  <!-- iPhone -->
+  <section class="box" id="ios">
+    <h2 data-bg="iPhone — 2 стъпки" data-en="iPhone — 2 steps"></h2>
+    <div class="step"><div class="num">1</div><div style="flex:1">
+      <p data-bg="Свали безплатното приложение <b>TestFlight</b> на Apple." data-en="Get Apple's free <b>TestFlight</b> app."></p>
+      <a class="btn alt" href="https://apps.apple.com/app/testflight/id899247664" data-bg="Свали TestFlight" data-en="Get TestFlight"></a>
+    </div></div>
+    <div class="step"><div class="num">2</div><div style="flex:1">
+      <p data-bg="Отвори линка и натисни <b>Install</b>." data-en="Open the link and tap <b>Install</b>."></p>
+      <a class="btn" href="https://testflight.apple.com/join/5VeMSTRh" data-bg="Инсталирай Palms Poker" data-en="Install Palms Poker"></a>
+    </div></div>
+    <p class="note warn" data-bg="Не трий TestFlight — чрез него идват новите версии." data-en="Keep TestFlight — new versions come through it."></p>
+  </section>
+
+  <!-- Android -->
+  <section class="box" id="android">
+    <h2 data-bg="Android" data-en="Android"></h2>
+    <div class="step"><div class="num">1</div><div style="flex:1">
+      <p data-bg="Свали файла." data-en="Download the file."></p>
+      <a class="btn" href="https://github.com/philknight77/palmspoker/releases/latest/download/palms-poker.apk" data-bg="Свали Palms Poker" data-en="Download Palms Poker"></a>
+    </div></div>
+    <div class="step"><div class="num">2</div><div style="flex:1">
+      <p data-bg="Отвори го. Ако телефонът попита, разреши <b>„Инсталиране от този източник“</b> и натисни <b>Инсталирай</b>."
+         data-en="Open it. If the phone asks, allow <b>“Install from this source”</b> and tap <b>Install</b>."></p>
+    </div></div>
+    <p class="note" data-bg="Приложението се обновява само, без да го теглиш отново." data-en="The app updates itself — no need to download it again."></p>
+  </section>
+
+  <p class="other"><a href="#" id="showAll" data-bg="Покажи и другия телефон" data-en="Show the other phone too"></a></p>
+
+  <footer data-bg="Palms Royale Sofia · Grand Hotel Millennium<br>Хазартът носи риск от развиване на зависимост. 18+"
+          data-en="Palms Royale Sofia · Grand Hotel Millennium<br>Gambling can be addictive. 18+"></footer>
+</main>
+<script>
+  // language: the phone's own, switchable
+  var lang = (navigator.language || "bg").toLowerCase().indexOf("bg") === 0 ? "bg" : "en";
+  try { lang = localStorage.getItem("lang") || lang; } catch (e) {}
+  function setLang(l) {
+    lang = l;
+    try { localStorage.setItem("lang", l); } catch (e) {}
+    document.documentElement.lang = l;
+    document.querySelectorAll("[data-" + l + "]").forEach(function (el) { el.innerHTML = el.getAttribute("data-" + l); });
+    document.querySelectorAll(".lang button").forEach(function (b) { b.classList.toggle("on", b.dataset.l === l); });
+  }
+  document.querySelectorAll(".lang button").forEach(function (b) { b.onclick = function () { setLang(b.dataset.l); }; });
+  setLang(lang);
+  // the right phone first: an iPhone sees the iPhone steps, an Android the APK
+  var ua = navigator.userAgent || "";
+  var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var isAndroid = /Android/.test(ua);
+  var other = document.getElementById("showAll");
+  if (isIOS) document.getElementById("android").classList.add("hidden");
+  else if (isAndroid) document.getElementById("ios").classList.add("hidden");
+  else other.parentNode.classList.add("hidden");
+  other.onclick = function (e) {
+    e.preventDefault();
+    document.getElementById("ios").classList.remove("hidden");
+    document.getElementById("android").classList.remove("hidden");
+    other.parentNode.classList.add("hidden");
+  };
+</script>
+</body>
+</html>
