@@ -299,8 +299,14 @@ async function floor(method, body) {
 }
 
 const limitKey = (t) => `${t.game}|${t.sb}|${t.bb}`;
-// a Bomb Pot has one blind, an ante for everyone: "BOMB POT €5 ante"
-const limitName = (t) => (/bomb/i.test(t.game) ? `${t.game} ${CUR}${t.bb} ante` : `${t.game} ${CUR}${t.sb}/${CUR}${t.bb}`);
+// Bomb Pot and OFCP have one figure instead of blinds: "BOMB POT €5", "OFCP €2"
+// one stake from everyone instead of blinds: Bomb Pot, OFCP (sb = bb = that figure), shown once
+const isAnte = (game) => /bomb|chinese|ofcp/i.test(game);
+const limitName = (t) => (isAnte(t.game) ? `${t.game} ${CUR}${t.bb}` : `${t.game} ${CUR}${t.sb}/${CUR}${t.bb}`);
+// OFCP is 3-max (2 or 3 play); everything else 6–10, 8 by default
+const seatChoices = (game) => (/chinese|ofcp/i.test(game) ? [3] : [6, 7, 8, 9, 10]);
+const defaultSeats = (game) => (/chinese|ofcp/i.test(game) ? 3 : DEFAULT_SEATS);
+const GAME_TYPES = ["NLH", "PLO", "DEALER'S CHOICE", "BOMB POT", "OFCP"];
 const rake = (t) => t.rake_pct != null ? `Rake ${t.rake_pct}%${t.rake_cap != null ? ` cap ${CUR}${t.rake_cap}` : ""}` : t.rake_cap != null ? `Rake ${CUR}${t.rake_cap}` : "";
 const buyin = (t) => [t.min_buyin ? `Buy-in ${CUR}${t.min_buyin}${t.max_buyin ? `–${CUR}${t.max_buyin}` : "+"}` : "", rake(t)].filter(Boolean).join(" · ");
 
@@ -736,7 +742,7 @@ function renderPanel() {
       if (!t && tourneyAt(no)) { state.modal = { no, tour: true }; return render(); }
       state.modal = t
         ? { no, confirmClose: false, change: false }
-        : { no, key: gs[0] ? limitKey(gs[0].sample) : null, taken: 0, total: DEFAULT_SEATS };
+        : { no, key: gs[0] ? limitKey(gs[0].sample) : null, taken: 0, total: gs[0] ? defaultSeats(gs[0].sample.game) : DEFAULT_SEATS };
       render();
     };
   });
@@ -774,14 +780,14 @@ function renderLimits() {
   });
 }
 
-function stepper(taken, total) {
+function stepper(taken, total, game) {
   return `<div class="stepper">
       <button class="round big minus" title="One player less">−</button>
       <b class="bigNum">${taken}<small>/${total}</small></b>
       <button class="round big plus" title="One player more">+</button>
     </div>
     <div class="row" style="justify-content:center">
-      ${[6, 7, 8, 9, 10].map((n) => `<button class="maxBtn ${n === total ? "on" : ""}" data-max="${n}">${n}-max</button>`).join("")}
+      ${seatChoices(game || "").map((n) => `<button class="maxBtn ${n === total ? "on" : ""}" data-max="${n}">${n}-max</button>`).join("")}
     </div>`;
 }
 
@@ -812,7 +818,7 @@ function modalHtml(gs) {
       <div class="mlabel">Game</div>
       ${gameChips(gs, m.key)}
       <div class="mlabel">Players at the table</div>
-      ${stepper(m.taken, m.total)}
+      ${stepper(m.taken, m.total, gs.find((g) => limitKey(g.sample) === m.key)?.sample.game)}
       <button class="btn gold wide" id="mOpen" ${m.key ? "" : "disabled"}>Open table ${m.no}</button>
     </div></div>`;
   }
@@ -821,7 +827,7 @@ function modalHtml(gs) {
     <div class="mhead"><span class="swatch" style="background:${colorOf(t, gs)}">${m.no}</span><div class="mtitle">Table ${m.no} <span class="openTag">OPEN</span></div><button class="mclose" title="Close">×</button></div>
     <div class="mgame">${esc(limitName(t))} <span class="hint">${esc(buyin(t))}</span></div>
     <div class="mlabel">Players at the table</div>
-    ${stepper(taken, total)}
+    ${stepper(taken, total, t.game)}
     ${m.change
       ? `<div class="mlabel">Switch to</div>${gameChips(gs.filter((g) => limitKey(g.sample) !== limitKey(t)), m.key, gs)}
          <div class="row"><button class="btn gold" id="mSwitch" ${m.key ? "" : "disabled"}>Switch game</button><button class="btn" id="mNoSwitch">Cancel</button></div>`
@@ -844,7 +850,15 @@ function bindModal(gs) {
   document.querySelector(".overlay").onclick = (e) => e.target.classList.contains("overlay") && shut();
   if (m.tour) return;
   const t = runningAt(m.no);
-  all(".gameBtn").forEach((b) => (b.onclick = () => { m.key = b.dataset.key; render(); }));
+  all(".gameBtn").forEach((b) => (b.onclick = () => {
+    m.key = b.dataset.key;
+    // a new game brings its own table size (Chinese Poker: 3-max) — not when switching an open table
+    if (!runningAt(m.no)) {
+      const g = gs.find((x) => limitKey(x.sample) === m.key);
+      if (g) { m.total = defaultSeats(g.sample.game); m.taken = Math.min(m.taken, m.total); }
+    }
+    render();
+  }));
   const groupOf = (key) => gs.find((g) => limitKey(g.sample) === key);
 
   if (!t) {
@@ -894,7 +908,7 @@ function limitFormCard() {
     <div class="limit" id="lf">
       <div class="lname">New limit</div>
       <div class="row">
-        <select id="lfGame"><option>NLH</option><option>PLO</option><option>MIX</option></select>
+        <select id="lfGame">${GAME_TYPES.map((g) => `<option>${g}</option>`).join("")}</select>
         <input id="lfSb" class="w70" inputmode="decimal" placeholder="SB" />
         <input id="lfBb" class="w70" inputmode="decimal" placeholder="BB" />
       </div>
@@ -920,8 +934,16 @@ function bindLimitForm() {
   const v = (id) => document.getElementById(id).value.trim();
   const n = (id) => { const x = parseFloat(v(id).replace(",", ".")); return x > 0 ? x : null; };
   document.getElementById("lfCancel").onclick = () => { state.limitForm = false; render(); };
+  // an ante game has one figure
+  const syncAnte = () => {
+    const ante = isAnte(v("lfGame"));
+    document.getElementById("lfBb").style.display = ante ? "none" : "";
+    document.getElementById("lfSb").placeholder = ante ? "Stake €" : "SB";
+  };
+  document.getElementById("lfGame").onchange = syncAnte;
+  syncAnte();
   document.getElementById("lfSave").onclick = () => {
-    const sbv = n("lfSb"), bbv = n("lfBb");
+    const sbv = n("lfSb"), bbv = isAnte(v("lfGame")) ? sbv : n("lfBb");
     if (!sbv || !bbv || bbv < sbv) return (document.getElementById("lfErr").textContent = "Check the blinds — big blind must be ≥ small blind.");
     state.limitForm = false;
     act(() => floor("POST", { action: "add-limit", venueId: state.venue, game: v("lfGame"), sb: sbv, bb: bbv,
