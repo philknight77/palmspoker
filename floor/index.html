@@ -82,7 +82,7 @@
   .ptable .pgame { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
   .ptable .pfoot { display: flex; align-items: center; justify-content: center; gap: 8px; }
   .ptable .pseats { font-size: 12px; font-weight: 800; }
-  .ptable .plus { display: none; }
+  .ptable .popen { display: none; }
   .ptable.on { color: var(--ink); border-color: #3b3b44; box-shadow: inset 0 0 0 2px rgba(255,255,255,.35), inset 0 -10px 24px rgba(0,0,0,.12), 0 8px 18px rgba(0,0,0,.4); }
   .ptable.on .pgame { text-transform: none; letter-spacing: 0; font-size: 12px; }
   .ptable.on:hover { border-color: #4a4a55; }
@@ -142,27 +142,27 @@
 
   /* the window over a table */
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
-  .modal { width: 100%; max-width: 460px; max-height: calc(100vh - 32px); overflow: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 26px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .modal { width: 100%; max-width: 540px; max-height: calc(100vh - 24px); overflow: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
   .mhead { display: flex; align-items: center; gap: 10px; }
-  .mtitle { font-size: 22px; font-weight: 800; }
+  .mtitle { font-size: 19px; font-weight: 800; }
   .openTag { font-size: 11px; color: var(--ink); background: var(--open); border-radius: 999px; padding: 2px 8px; vertical-align: middle; margin-left: 6px; font-weight: 800; }
   .mclose { margin-left: auto; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); color: var(--sec); font-size: 20px; cursor: pointer; line-height: 1; }
   .mgame { font-size: 17px; font-weight: 800; }
-  .mlabel { color: var(--sec); font-size: 12px; font-weight: 700; margin-top: 4px; }
-  .games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .gameBtn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 14px; padding: 10px 12px; cursor: pointer; font-weight: 700; text-align: left; display: flex; gap: 10px; align-items: center; }
-  .gameBtn small { display: block; color: var(--sec); font-weight: 500; font-size: 11px; }
-  .gameBtn .gdot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .mlabel { color: var(--sec); font-size: 11px; font-weight: 700; margin-top: 2px; }
+  .games { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .gameBtn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 12px; padding: 7px 9px; cursor: pointer; font-weight: 700; font-size: 12px; text-align: left; display: flex; gap: 8px; align-items: center; line-height: 1.25; }
+  .gameBtn small { display: block; color: var(--sec); font-weight: 500; font-size: 10px; }
+  .gameBtn .gdot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .gameBtn.on { outline: 2px solid var(--pink); background: var(--card2); }
-  .stepper { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .stepper { display: flex; align-items: center; justify-content: center; gap: 14px; }
   .round { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--card2); color: var(--text); cursor: pointer; font-size: 18px; font-weight: 800; }
-  .round.big { width: 54px; height: 54px; font-size: 26px; }
+  .round.big { width: 44px; height: 44px; font-size: 22px; }
   .round:hover { background: #33333a; }
-  .bigNum { font-size: 44px; font-weight: 800; min-width: 96px; text-align: center; letter-spacing: -1px; }
-  .bigNum small { font-size: 22px; color: var(--sec); }
+  .bigNum { font-size: 34px; font-weight: 800; min-width: 80px; text-align: center; letter-spacing: -1px; }
+  .bigNum small { font-size: 18px; color: var(--sec); }
   .maxBtn { background: transparent; border: 1px solid var(--border); color: var(--sec); border-radius: 999px; padding: 5px 11px; cursor: pointer; font-weight: 700; font-size: 12px; }
   .maxBtn.on { background: var(--text); color: var(--ink); border-color: var(--text); }
-  .wide { width: 100%; padding: 13px; font-size: 15px; }
+  .wide { width: 100%; padding: 11px; font-size: 15px; }
 
   /* the intro after signing in */
   .intro { position: fixed; inset: 0; z-index: 50; background: radial-gradient(ellipse at 50% 40%, #1c1c21, #0b0b0d 70%);
@@ -196,7 +196,38 @@
     .ptable .pno { font-size: 22px; }
     .ptable.on .pgame { font-size: 10px; }
     .dots { display: none; }
-    .games { grid-template-columns: 1fr; }
+    .games { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* a computer screen: the tables page fits the window, nothing to scroll
+     (Leo, 23.11) — the tables share whatever height is left */
+  @media (min-width: 1000px) and (min-height: 560px) {
+    .wrap.fit { height: 100vh; display: flex; flex-direction: column; padding: 14px 22px 8px; }
+    .fit .topbar { flex: none; margin-bottom: 12px; }
+    .fit .dash { flex: 1; min-height: 0; align-items: stretch; }
+    .fit .dash > .col { min-height: 0; }
+    .fit .dash > .col:first-child > .card { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 16px; }
+    .fit .cardHead { margin-bottom: 10px; }
+    .fit .kpis { flex: none; }
+    .fit .kpi { min-height: 0; padding: 12px 18px; gap: 4px; }
+    .fit .kpi b { font-size: clamp(26px, 4.2vh, 40px); }
+    .fit .room { flex: 1; min-height: 0; grid-template-rows: repeat(var(--rows), minmax(0, 1fr)); gap: clamp(6px, 1.2vh, 12px); }
+    .fit .ptable { aspect-ratio: auto; height: 100%; min-height: 0; border-width: clamp(4px, .8vh, 7px); padding: 2px 10px; gap: 1px; }
+    .fit .ptable .pno { font-size: clamp(16px, 3.4vh, 32px); }
+    .fit .ptable .pgame { font-size: clamp(9px, 1.4vh, 12px); }
+    .fit .ptable .pseats { font-size: clamp(10px, 1.5vh, 13px); }
+    .fit .dots i { width: clamp(4px, .7vh, 6px); height: clamp(4px, .7vh, 6px); }
+    .fit .dash > .col:last-child > .card:last-child { flex: 1; min-height: 0; overflow: auto; }
+    .fit .ring { width: clamp(80px, 14vh, 118px); height: clamp(80px, 14vh, 118px); }
+    .fit .updated { flex: none; margin-top: 6px; }
+  }
+  /* thin dark scrollbars (the Live games list when many games run) */
+  * { scrollbar-width: thin; scrollbar-color: #3a3a42 transparent; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #3a3a42; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  @media (min-width: 1000px) and (max-height: 760px) {
+    .fit .dots { display: none; }
   }
 </style>
 </head>
@@ -582,6 +613,8 @@ function renderPanel() {
   const extra = open.map((t) => t.table_no).filter((n) => n > TABLE_COUNT);
   const nos = [...Array.from({ length: TABLE_COUNT }, (_, i) => i + 1), ...new Set(extra)];
   const liveGames = gs.filter((g) => g.open.length);
+  const rows = Math.ceil(nos.length / 6);
+  $app.classList.add("fit");
 
   $app.innerHTML = `
     ${topbar("tables")}
@@ -594,10 +627,10 @@ function renderPanel() {
         </div>
         <section class="card">
           <div class="cardHead"><h3>Tables</h3><span>tap a table to open it, change the players or close it</span></div>
-          <div class="room">
+          <div class="room" style="--rows:${rows}">
             ${nos.map((no) => {
               const t = runningAt(no);
-              if (!t) return `<button class="ptable" data-no="${no}"><span class="pno">${no}</span><span class="pfoot"><span class="pgame">Closed</span><span class="plus">+ open</span></span></button>`;
+              if (!t) return `<button class="ptable" data-no="${no}"><span class="pno">${no}</span><span class="pfoot"><span class="pgame">Closed</span><span class="popen">+ open</span></span></button>`;
               const total = t.seats_total ?? DEFAULT_SEATS, taken = t.seats_taken ?? 0;
               return `<button class="ptable on ${taken >= total ? "full" : ""}" style="background:radial-gradient(ellipse at 50% 30%, color-mix(in srgb, ${colorOf(t, gs)} 70%, white), ${colorOf(t, gs)})" data-no="${no}">
                 <span class="pno">${no}</span>
@@ -726,18 +759,23 @@ function modalHtml(gs) {
 
 function bindModal(gs) {
   const m = state.modal;
+  // look only inside the window: the room behind it has look-alike class names
+  // ("+ open" on a closed table took the + button's clicks, 23.11)
+  const M = document.querySelector(".modal");
+  const one = (sel) => M.querySelector(sel);
+  const all = (sel) => M.querySelectorAll(sel);
   const t = runningAt(m.no);
   const shut = () => { state.modal = null; render(); };
-  document.querySelector(".mclose").onclick = shut;
+  one(".mclose").onclick = shut;
   document.querySelector(".overlay").onclick = (e) => e.target.classList.contains("overlay") && shut();
-  document.querySelectorAll(".gameBtn").forEach((b) => (b.onclick = () => { m.key = b.dataset.key; render(); }));
+  all(".gameBtn").forEach((b) => (b.onclick = () => { m.key = b.dataset.key; render(); }));
   const groupOf = (key) => gs.find((g) => limitKey(g.sample) === key);
 
   if (!t) {
-    document.querySelector(".minus").onclick = () => { m.taken = Math.max(0, m.taken - 1); render(); };
-    document.querySelector(".plus").onclick = () => { m.taken = Math.min(m.total, m.taken + 1); render(); };
-    document.querySelectorAll(".maxBtn").forEach((b) => (b.onclick = () => { m.total = Number(b.dataset.max); m.taken = Math.min(m.taken, m.total); render(); }));
-    document.getElementById("mOpen").onclick = () => {
+    one(".minus").onclick = () => { m.taken = Math.max(0, m.taken - 1); render(); };
+    one(".plus").onclick = () => { m.taken = Math.min(m.total, m.taken + 1); render(); };
+    all(".maxBtn").forEach((b) => (b.onclick = () => { m.total = Number(b.dataset.max); m.taken = Math.min(m.taken, m.total); render(); }));
+    one("#mOpen").onclick = () => {
       const g = groupOf(m.key);
       if (!g) return;
       const { no, taken, total } = m;
@@ -748,17 +786,17 @@ function bindModal(gs) {
   }
   const total = t.seats_total ?? DEFAULT_SEATS, taken = t.seats_taken ?? 0;
   // the players change at once, the window stays open
-  document.querySelector(".minus").onclick = () => taken > 0 && act(() => setSeats(t, taken - 1, total));
-  document.querySelector(".plus").onclick = () => taken < total && act(() => setSeats(t, taken + 1, total));
-  document.querySelectorAll(".maxBtn").forEach((b) => (b.onclick = () => {
+  one(".minus").onclick = () => taken > 0 && act(() => setSeats(t, taken - 1, total));
+  one(".plus").onclick = () => taken < total && act(() => setSeats(t, taken + 1, total));
+  all(".maxBtn").forEach((b) => (b.onclick = () => {
     const n = Number(b.dataset.max);
     act(() => setSeats(t, Math.min(taken, n), n));
   }));
-  const ch = document.getElementById("mChange");
+  const ch = one("#mChange");
   if (ch) ch.onclick = () => { m.change = true; m.key = null; render(); };
-  const ns = document.getElementById("mNoSwitch");
+  const ns = one("#mNoSwitch");
   if (ns) ns.onclick = () => { m.change = false; render(); };
-  const sw = document.getElementById("mSwitch");
+  const sw = one("#mSwitch");
   if (sw) sw.onclick = () => {
     const g = groupOf(m.key);
     if (!g) return;
@@ -767,11 +805,11 @@ function bindModal(gs) {
     act(async () => { await closeTable(t); await loadTables(); await openTableAt(m.no, groups().find((x) => limitKey(x.sample) === m.key) || g, taken, total); },
       `Table ${m.no} · ${limitName(g.sample)}`);
   };
-  const c = document.getElementById("mClose");
+  const c = one("#mClose");
   if (c) c.onclick = () => { m.confirmClose = true; render(); };
-  const cn = document.getElementById("mCloseNo");
+  const cn = one("#mCloseNo");
   if (cn) cn.onclick = () => { m.confirmClose = false; render(); };
-  const cy = document.getElementById("mCloseYes");
+  const cy = one("#mCloseYes");
   if (cy) cy.onclick = () => { const no = m.no; state.modal = null; act(() => closeTable(t), `Table ${no} closed`); };
 }
 
@@ -816,6 +854,7 @@ function bindLimitForm() {
 }
 
 function render() {
+  $app.classList.remove("fit"); // only the tables page fills the screen
   if (!state.session) return renderLogin();
   if (!state.venue) return renderNoAccess();
   if (state.mustChange) return renderFirstPassword();
