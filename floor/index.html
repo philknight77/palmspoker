@@ -7,6 +7,8 @@
 <title>Palms Floor</title>
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="apple-touch-icon" href="logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
 <!--
   Palms Poker · floor panel for the cash games (Leo, 23.11) — the web twin of
   the app's "⚙ Floor panel": open and close tables, players per table, limits.
@@ -15,80 +17,186 @@
   The anon key below is the public one the app ships with.
 -->
 <style>
+  /* Dark dashboard (Leo, 23.11 — after the "Fitness Tracker Dashboard, dark"
+     shot on Dribbble): near-black ground, soft dark cards, pastel cards with
+     dark ink for what matters, pill navigation, round icon buttons. */
   :root {
-    --bg: #0e0b2e; --card: #1a1550; --card2: #231d63; --border: #352d7d;
-    --text: #eef1f7; --sec: #9aa6bd; --muted: #6c7995;
-    --gold: #e0a42d; --goldText: #f2c14e; --onGold: #1a1200;
-    --open: #22c55e; --openBg: rgba(34,197,94,.12); --danger: #ff6b6b;
+    --bg: #0e0e10; --panel: #17171a; --card: #1e1e22; --card2: #27272c; --border: rgba(255,255,255,.07);
+    --text: #f4f4f5; --sec: #a1a1aa; --muted: #6b6b75; --ink: #121215;
+    --pink: #f5c2e7; --blue: #cfe1f9; --lime: #e2f5b8; --peach: #fdd9bd; --lav: #dcd4ff; --mint: #c9f1df; --sun: #fbe9a6;
+    --gold: #f5c2e7; --goldText: #f5c2e7; --onGold: #121215;
+    --open: #86efac; --danger: #ff8a8a;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
-    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  button, input, select { font: inherit; }
-  .wrap { max-width: 1200px; margin: 0 auto; padding: 16px 16px 60px; }
-  header { display: flex; align-items: center; gap: 12px; padding: 6px 0 16px; }
-  header .logo { width: 42px; height: 42px; flex: none; }
-  .login .logo { width: 96px; height: 96px; align-self: center; margin-bottom: 2px; }
-  header h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: .3px; }
-  header h1 span { color: var(--goldText); }
-  header .who { margin-left: auto; color: var(--sec); font-size: 13px; text-align: right; }
-  .link { background: none; border: 0; color: var(--goldText); cursor: pointer; padding: 0; font-weight: 700; }
+    font: 14px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  button, input, select, textarea { font: inherit; }
+  .wrap { max-width: 1760px; margin: 0 auto; padding: 18px 24px 48px; }
+  .link { background: none; border: 0; color: var(--pink); cursor: pointer; padding: 0; font-weight: 600; }
 
-  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
-  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
-  .stat b { display: block; font-size: 26px; font-weight: 800; }
-  .stat small { color: var(--sec); text-transform: uppercase; letter-spacing: .5px; font-size: 11px; font-weight: 700; }
+  /* top bar */
+  .topbar { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .topbar .logo { width: 44px; height: 44px; flex: none; }
+  .nav { display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--border); padding: 5px; border-radius: 999px; }
+  .pill { border: 0; background: transparent; color: var(--sec); border-radius: 999px; padding: 8px 16px; cursor: pointer; font-weight: 700; font-size: 12px; letter-spacing: .6px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 7px; }
+  .pill:hover { color: var(--text); }
+  .pill.on { background: var(--pink); color: var(--ink); }
+  .pill svg { width: 15px; height: 15px; }
+  .tright { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .hello { text-align: right; line-height: 1.25; }
+  .hello b { display: block; font-size: 14px; }
+  .hello span { color: var(--sec); font-size: 12px; }
+  .iconBtn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border); background: var(--panel); color: var(--text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .iconBtn:hover { background: var(--card2); }
+  .iconBtn svg { width: 18px; height: 18px; }
+  .avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--text); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: 14px; }
-  .limit { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-  .limit.live { border-color: rgba(34,197,94,.55); }
-  .lhead { display: flex; align-items: baseline; gap: 8px; }
-  .lname { font-size: 19px; font-weight: 800; }
-  .lmeta { color: var(--sec); font-size: 13px; }
-  .lhead .del { margin-left: auto; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 18px; }
-  .lhead .del:hover { color: var(--danger); }
-  .closedNote { color: var(--muted); font-size: 13px; }
+  /* the dashboard grid */
+  .dash { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 22px; padding: 18px; }
+  .cardHead { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  .cardHead h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .cardHead span { color: var(--muted); font-size: 12px; }
 
+  .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .kpi { border-radius: 22px; padding: 18px; min-height: 118px; display: flex; flex-direction: column; justify-content: space-between; }
+  .kpi small { font-size: 12px; font-weight: 700; opacity: .75; }
+  .kpi b { font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+  .kpi em { font-style: normal; font-size: 12px; opacity: .7; }
+  .kpi.pink { background: var(--pink); color: var(--ink); }
+  .kpi.blue { background: var(--blue); color: var(--ink); }
+  .kpi.dark { background: var(--card); border: 1px solid var(--border); }
+  .bar { height: 8px; border-radius: 999px; background: var(--card2); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 999px; background: var(--lime); }
+
+  /* tables 1–30 */
+  .room { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+  /* a poker table seen from above (Leo, 23.11): an oval of felt inside a rail */
+  .ptable { position: relative; border: 7px solid #2c2c33; border-radius: 999px; aspect-ratio: 2 / 1; background: radial-gradient(ellipse at 50% 35%, #2a2a31, #1b1b20);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.05), 0 6px 14px rgba(0,0,0,.35); color: var(--muted); cursor: pointer;
+    padding: 6px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center;
+    transition: transform .12s ease, border-color .12s ease; }
+  .ptable:hover { transform: translateY(-2px); border-color: #3a3a43; }
+  .ptable .pno { font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -.5px; }
+  .ptable .pgame { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .ptable .pfoot { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .ptable .pseats { font-size: 12px; font-weight: 800; }
+  .ptable .plus { display: none; }
+  .ptable.on { color: var(--ink); border-color: #3b3b44; box-shadow: inset 0 0 0 2px rgba(255,255,255,.35), inset 0 -10px 24px rgba(0,0,0,.12), 0 8px 18px rgba(0,0,0,.4); }
+  .ptable.on .pgame { text-transform: none; letter-spacing: 0; font-size: 12px; }
+  .ptable.on:hover { border-color: #4a4a55; }
+  .dots { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
+  .dots i { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid currentColor; opacity: .45; }
+  .dots i.f { background: currentColor; opacity: .9; }
+  .full .pseats::after { content: " full"; font-weight: 700; }
+
+  /* right column */
+  .ringWrap { display: flex; align-items: center; gap: 18px; }
+  .ring { width: 118px; height: 118px; flex: none; }
+  .ring text { fill: var(--text); font-weight: 800; }
+  .ringInfo b { font-size: 20px; display: block; }
+  .ringInfo span { color: var(--sec); font-size: 12px; }
+  .live { display: flex; flex-direction: column; gap: 10px; }
+  .liveRow { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 16px; background: var(--card2); }
+  .swatch { width: 38px; height: 38px; border-radius: 12px; flex: none; display: inline-flex; align-items: center; justify-content: center; color: var(--ink); font-weight: 800; font-size: 13px; }
+  .liveRow b { display: block; font-size: 13px; }
+  .liveRow span { color: var(--sec); font-size: 12px; }
+  .liveRow .num { margin-left: auto; font-weight: 800; font-size: 16px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 6px 2px; }
+  .updated { color: var(--muted); font-size: 12px; margin-top: 16px; text-align: center; }
+
+  /* limits page */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
+  .limit { background: var(--card); border: 1px solid var(--border); border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .lname { font-size: 17px; font-weight: 800; }
+  .lrow { display: flex; align-items: center; gap: 12px; }
+  .lrow .del { margin-left: auto; }
   .tables { display: flex; flex-direction: column; gap: 8px; }
-  .tbl { display: flex; align-items: center; gap: 10px; background: var(--openBg); border: 1px solid rgba(34,197,94,.35); border-radius: 12px; padding: 8px 10px; }
-  .tno { min-width: 54px; font-weight: 800; font-size: 17px; }
-  .tno small { display: block; color: var(--open); font-size: 10px; letter-spacing: .6px; font-weight: 800; }
-  .seats { display: flex; align-items: center; gap: 6px; }
-  .seats b { min-width: 48px; text-align: center; font-size: 17px; }
-  .round { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--card2); color: var(--text); cursor: pointer; font-size: 18px; font-weight: 800; }
-  .round:hover { border-color: var(--gold); }
-  .tbl .close { margin-left: auto; }
+  .tbl { display: flex; align-items: center; gap: 10px; background: var(--card2); border-radius: 14px; padding: 10px 12px; flex-wrap: wrap; }
 
-  .btn { border: 1px solid var(--border); background: var(--card2); color: var(--text); border-radius: 10px; padding: 8px 12px; cursor: pointer; font-weight: 700; }
-  .btn:hover { border-color: var(--gold); }
-  .btn.gold { background: var(--gold); border-color: var(--gold); color: var(--onGold); }
+  /* buttons and inputs */
+  .btn { border: 1px solid var(--border); background: var(--card2); color: var(--text); border-radius: 12px; padding: 9px 14px; cursor: pointer; font-weight: 700; }
+  .btn:hover { background: #33333a; }
+  .btn.gold { background: var(--pink); border-color: var(--pink); color: var(--ink); }
+  .btn.gold:hover { filter: brightness(1.05); }
   .btn.danger { color: var(--danger); }
-  .btn:disabled { opacity: .5; cursor: default; }
+  .btn:disabled { opacity: .45; cursor: default; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  input, select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 9px 10px; min-width: 0; }
-  input:focus, select:focus { outline: 2px solid var(--gold); outline-offset: -1px; }
-  .w70 { width: 70px; } .w90 { width: 90px; } .w120 { width: 120px; }
-  .form { background: var(--card2); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-  .err { color: var(--danger); font-size: 13px; min-height: 0; }
+  input, select, textarea { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--pink); outline-offset: -1px; }
+  .w70 { width: 76px; } .w90 { width: 96px; } .w120 { width: 140px; }
+  .form { background: var(--card2); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .err { color: var(--danger); font-size: 13px; }
   .hint { color: var(--muted); font-size: 12px; }
-  .add { border: 1px dashed var(--border); border-radius: 16px; display: flex; align-items: center; justify-content: center; min-height: 120px; color: var(--goldText); font-weight: 800; cursor: pointer; background: transparent; }
-  .add:hover { border-color: var(--gold); }
 
-  .login { max-width: 380px; margin: 12vh auto 0; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+  /* sign in */
+  .login { max-width: 380px; margin: 12vh auto 0; background: var(--card); border: 1px solid var(--border); border-radius: 26px; padding: 26px; display: flex; flex-direction: column; gap: 12px; }
+  .login .logo { width: 92px; height: 92px; align-self: center; margin-bottom: 4px; }
   .login h2 { margin: 0; font-size: 22px; }
+  .login h2 span { color: var(--pink) !important; }
   .login p { margin: 0; color: var(--sec); font-size: 14px; }
-  .login input { width: 100%; font-size: 17px; padding: 12px; }
-  .login .btn { padding: 12px; font-size: 16px; }
-  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #000c; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; display: none; max-width: calc(100% - 32px); }
-  .updated { color: var(--muted); font-size: 12px; margin-top: 18px; text-align: center; }
+  .login input { width: 100%; font-size: 16px; padding: 13px 14px; }
+  .login .btn { padding: 13px; font-size: 15px; }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--text); color: var(--ink); font-weight: 600; padding: 10px 18px; border-radius: 999px; font-size: 14px; display: none; max-width: calc(100% - 32px); z-index: 60; }
 
-  @media (max-width: 600px) {
-    .wrap { padding: 12px 12px 60px; }
-    .grid { grid-template-columns: 1fr; }
-    .stat b { font-size: 22px; }
-    header h1 { font-size: 19px; }
-    .tbl { flex-wrap: wrap; row-gap: 8px; }
-    .tbl .max { padding: 7px 6px; }
+  /* the window over a table */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .modal { width: 100%; max-width: 460px; max-height: calc(100vh - 32px); overflow: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 26px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .mhead { display: flex; align-items: center; gap: 10px; }
+  .mtitle { font-size: 22px; font-weight: 800; }
+  .openTag { font-size: 11px; color: var(--ink); background: var(--open); border-radius: 999px; padding: 2px 8px; vertical-align: middle; margin-left: 6px; font-weight: 800; }
+  .mclose { margin-left: auto; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); color: var(--sec); font-size: 20px; cursor: pointer; line-height: 1; }
+  .mgame { font-size: 17px; font-weight: 800; }
+  .mlabel { color: var(--sec); font-size: 12px; font-weight: 700; margin-top: 4px; }
+  .games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .gameBtn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 14px; padding: 10px 12px; cursor: pointer; font-weight: 700; text-align: left; display: flex; gap: 10px; align-items: center; }
+  .gameBtn small { display: block; color: var(--sec); font-weight: 500; font-size: 11px; }
+  .gameBtn .gdot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .gameBtn.on { outline: 2px solid var(--pink); background: var(--card2); }
+  .stepper { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .round { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--card2); color: var(--text); cursor: pointer; font-size: 18px; font-weight: 800; }
+  .round.big { width: 54px; height: 54px; font-size: 26px; }
+  .round:hover { background: #33333a; }
+  .bigNum { font-size: 44px; font-weight: 800; min-width: 96px; text-align: center; letter-spacing: -1px; }
+  .bigNum small { font-size: 22px; color: var(--sec); }
+  .maxBtn { background: transparent; border: 1px solid var(--border); color: var(--sec); border-radius: 999px; padding: 5px 11px; cursor: pointer; font-weight: 700; font-size: 12px; }
+  .maxBtn.on { background: var(--text); color: var(--ink); border-color: var(--text); }
+  .wide { width: 100%; padding: 13px; font-size: 15px; }
+
+  /* the intro after signing in */
+  .intro { position: fixed; inset: 0; z-index: 50; background: radial-gradient(ellipse at 50% 40%, #1c1c21, #0b0b0d 70%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; cursor: pointer; transition: opacity .45s ease; }
+  .intro.out { opacity: 0; }
+  .introLogo { width: min(220px, 48vw); height: auto; animation: introLogo .9s cubic-bezier(.2,.8,.2,1) both; filter: drop-shadow(0 0 28px rgba(242,193,78,.3)); }
+  @keyframes introLogo { from { opacity: 0; transform: scale(.7) rotate(-20deg); } to { opacity: 1; transform: none; } }
+  .introText { min-height: 1.3em; font-size: clamp(24px, 4.2vw, 46px); font-weight: 800; letter-spacing: -.5px; text-align: center; padding: 0 16px; }
+  .introText .typed { background: linear-gradient(90deg, #fff, var(--pink)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .caret { display: inline-block; width: 3px; height: 1em; margin-left: 4px; vertical-align: -0.12em; background: var(--pink); animation: blink .9s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  @media (min-width: 1500px) {
+    .ptable .pno { font-size: 32px; }
+  }
+  @media (max-width: 1180px) {
+    .dash { grid-template-columns: 1fr; }
+    .room { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  }
+  @media (max-width: 700px) {
+    .wrap { padding: 12px 12px 40px; }
+    .topbar { flex-wrap: wrap; gap: 10px; }
+    .nav { order: 3; width: 100%; justify-content: space-between; }
+    .pill { padding: 8px 10px; }
+    .hello { display: none; }
+    .kpis { gap: 10px; }
+    .kpi { padding: 14px; min-height: 96px; border-radius: 18px; }
+    .kpi b { font-size: 30px; }
+    .room { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .ptable { border-width: 5px; aspect-ratio: 1.6 / 1; padding: 4px 6px; }
+    .ptable .pno { font-size: 22px; }
+    .ptable.on .pgame { font-size: 10px; }
+    .dots { display: none; }
+    .games { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -108,7 +216,7 @@ const $app = document.getElementById("app");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 let state = { session: null, venues: [], venue: null, owner: false, tables: [], step: "email", email: "", busy: false,
-  openForm: null, limitForm: false, err: "", loadedAt: null,
+  modal: null, limitForm: false, err: "", loadedAt: null,
   login: "password", // floor staff: username + password; the owner can use an email code
   view: "cash", staff: null, name: "", mustChange: false };
 // staff accounts' made-up addresses (supabase/floor_staff.sql)
@@ -143,8 +251,10 @@ async function floor(method, body) {
 }
 
 const limitKey = (t) => `${t.game}|${t.sb}|${t.bb}`;
-const limitName = (t) => `${t.game} ${CUR}${t.sb}/${CUR}${t.bb}`;
-const buyin = (t) => t.min_buyin ? `Buy-in ${CUR}${t.min_buyin}${t.max_buyin ? `–${CUR}${t.max_buyin}` : "+"}` : "";
+// a Bomb Pot has one blind, an ante for everyone: "BOMB POT €5 ante"
+const limitName = (t) => (/bomb/i.test(t.game) ? `${t.game} ${CUR}${t.bb} ante` : `${t.game} ${CUR}${t.sb}/${CUR}${t.bb}`);
+const rake = (t) => t.rake_pct != null ? `Rake ${t.rake_pct}%${t.rake_cap != null ? ` cap ${CUR}${t.rake_cap}` : ""}` : t.rake_cap != null ? `Rake ${CUR}${t.rake_cap}` : "";
+const buyin = (t) => [t.min_buyin ? `Buy-in ${CUR}${t.min_buyin}${t.max_buyin ? `–${CUR}${t.max_buyin}` : "+"}` : "", rake(t)].filter(Boolean).join(" · ");
 
 async function loadTables() {
   const { data, error } = await sb.from("cash_tables").select("*").eq("venue_id", state.venue).order("bb").order("table_no");
@@ -217,6 +327,7 @@ function renderLogin() {
       const u = user.value.trim();
       if (!u || !pass.value) return;
       go.disabled = true; state.err = "";
+      state.freshSignIn = true;
       const { error } = await sb.auth.signInWithPassword({ email: toEmail(u), password: pw(pass.value) });
       if (error) { state.err = /invalid/i.test(error.message) ? "Wrong card number or password." : error.message; render(); }
     };
@@ -253,6 +364,7 @@ function renderLogin() {
         if (error) throw error;
         state.step = "code";
       } else {
+        state.freshSignIn = true;
         const { error } = await sb.auth.verifyOtp({ email: state.email, token: input.value.trim(), type: "email" });
         if (error) throw error;
         return; // onAuthStateChange takes over
@@ -273,17 +385,13 @@ async function loadStaff() {
 function renderStaff() {
   const list = state.staff || [];
   $app.innerHTML = `
-    <header>
-      <img class="logo" src="logo.png" alt="Palms Poker" />
-      <h1>Palms <span>Floor</span> · Staff</h1>
-      <div class="who"><button class="link" id="toCash">‹ Back to the tables</button></div>
-    </header>
+    ${topbar("staff")}
     <div class="grid">
       <div class="limit">
         <div class="lname">Floor accounts</div>
         <div class="tables">
           ${list.map((u) => `
-            <div class="tbl" style="background:var(--card2);border-color:var(--border)" data-u="${esc(u.id)}">
+            <div class="tbl" data-u="${esc(u.id)}">
               <div style="flex:1;min-width:0">
                 <b>${esc(u.name || u.username)}</b>${u.owner ? ` <span class="hint">· owner</span>` : ""}${u.me ? ` <span class="hint">· you</span>` : ""}
                 <div class="hint">${u.staff ? `Card ${esc(u.username)} · ` : ""}${u.last ? `last in ${new Date(u.last).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}` : "never signed in"}</div>
@@ -300,7 +408,7 @@ function renderStaff() {
         <div class="err" id="staffErr"></div>
       </div>
     </div>`;
-  document.getElementById("toCash").onclick = () => { state.view = "cash"; render(); };
+  bindTopbar();
   document.getElementById("addStaff").onclick = () => {
     const err = document.getElementById("staffErr");
     const lines = document.getElementById("bulk").value.split(/\n+/).map((l) => l.trim()).filter(Boolean);
@@ -389,129 +497,282 @@ function renderNoAccess() {
   document.getElementById("out").onclick = () => sb.auth.signOut();
 }
 
+// ── The room (Leo, 23.11): tables 1–30 as in the hall. Tap a closed one to
+// open it (game + players), tap an open one to change the players or close it.
+const TABLE_COUNT = 30;
+
+const runningAt = (no) => state.tables.find((t) => t.is_running && t.table_no === no);
+
+// open table `no` with limit group g: the same row comes back on if this
+// table had that game before, otherwise a new row (the floor function's "add")
+async function openTableAt(no, g, taken, total) {
+  if (runningAt(no)) throw new Error(`Table ${no} is already open`);
+  const before = g.rows.find((t) => !t.is_running && t.table_no === no);
+  let id;
+  if (before) {
+    await floor("POST", { tableId: before.id, is_running: true });
+    id = before.id;
+  } else {
+    const { table } = await floor("POST", { action: "add", fromTableId: g.sample.id, tableNo: no });
+    id = table.id;
+  }
+  await floor("POST", { action: "seats", tableId: id, seats_taken: taken, seats_total: total });
+}
+
+// pastel per game, in the order the limits are listed
+const PASTELS = ["var(--pink)", "var(--blue)", "var(--lime)", "var(--peach)", "var(--lav)", "var(--mint)", "var(--sun)"];
+const colorOf = (t, gs) => PASTELS[Math.max(0, gs.findIndex((g) => limitKey(g.sample) === limitKey(t))) % PASTELS.length];
+const ICON = {
+  tables: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="6"/></svg>`,
+  limits: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>`,
+  staff: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.6 3 5.2"/></svg>`,
+  out: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5M15 12H4"/></svg>`,
+};
+const initials = (n) => (n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+function topbar(view) {
+  const venueName = state.venue.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const pill = (v, label) => `<button class="pill ${view === v ? "on" : ""}" data-view="${v}">${ICON[v]}${label}</button>`;
+  return `
+    <div class="topbar">
+      <img class="logo" src="logo.png" alt="Palms Poker" />
+      <div class="nav">${pill("tables", "Tables")}${pill("limits", "Limits")}${state.owner ? pill("staff", "Staff") : ""}</div>
+      <div class="tright">
+        <div class="hello"><b>Welcome, ${esc(state.name)}</b><span>${esc(venueName)} · cash games</span></div>
+        <span class="avatar" title="${esc(state.name)}">${esc(initials(state.name))}</span>
+        <button class="iconBtn" id="out" title="Sign out">${ICON.out}</button>
+      </div>
+    </div>`;
+}
+
+function bindTopbar() {
+  document.getElementById("out").onclick = () => sb.auth.signOut();
+  document.querySelectorAll("[data-view]").forEach((b) => {
+    b.onclick = async () => {
+      const v = b.dataset.view;
+      state.view = v === "tables" ? "cash" : v;
+      state.modal = null;
+      if (v === "staff") { try { await loadStaff(); } catch (e) { toast(e.message); } }
+      render();
+    };
+  });
+}
+
+function dots(taken, total) {
+  return `<span class="dots">${Array.from({ length: total }, (_, i) => `<i class="${i < taken ? "f" : ""}"></i>`).join("")}</span>`;
+}
+
+function ring(pct) {
+  const r = 48, c = 2 * Math.PI * r, off = c * (1 - pct);
+  return `<svg class="ring" viewBox="0 0 120 120">
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--card2)" stroke-width="12"/>
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--lime)" stroke-width="12" stroke-linecap="round"
+      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="66" text-anchor="middle" font-size="22">${Math.round(pct * 100)}%</text>
+  </svg>`;
+}
+
 function renderPanel() {
   const gs = groups();
   const open = state.tables.filter((t) => t.is_running);
   const seated = open.reduce((a, t) => a + (t.seats_taken || 0), 0);
-  const free = open.reduce((a, t) => a + (t.seats_total != null ? Math.max(0, t.seats_total - (t.seats_taken || 0)) : 0), 0);
-  const venueName = state.venue.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const seats = open.reduce((a, t) => a + (t.seats_total ?? DEFAULT_SEATS), 0);
+  const free = Math.max(0, seats - seated);
+  // 1–30, and any open table numbered past that
+  const extra = open.map((t) => t.table_no).filter((n) => n > TABLE_COUNT);
+  const nos = [...Array.from({ length: TABLE_COUNT }, (_, i) => i + 1), ...new Set(extra)];
+  const liveGames = gs.filter((g) => g.open.length);
 
   $app.innerHTML = `
-    <header>
-      <img class="logo" src="logo.png" alt="Palms Poker" />
-      <h1>Palms <span>Floor</span> · Cash</h1>
-      <div class="who"><b style="color:var(--text)">Welcome, ${esc(state.name)}</b><br>${esc(venueName)} · ${state.owner ? `<button class="link" id="toStaff">Staff</button> · ` : ""}<button class="link" id="out">Sign out</button></div>
-    </header>
-    <div class="stats">
-      <div class="stat"><small>Open tables</small><b>${open.length}</b></div>
-      <div class="stat"><small>Players</small><b>${seated}</b></div>
-      <div class="stat"><small>Free seats</small><b>${free}</b></div>
+    ${topbar("tables")}
+    <div class="dash">
+      <div class="col">
+        <div class="kpis">
+          <div class="kpi pink"><small>Open tables</small><b>${open.length}</b><em>of ${TABLE_COUNT} in the room</em></div>
+          <div class="kpi blue"><small>Players</small><b>${seated}</b><em>${open.length ? `${(seated / open.length).toFixed(1)} per table` : "no game running"}</em></div>
+          <div class="kpi dark"><small style="color:var(--sec)">Free seats</small><b>${free}</b><div class="bar"><i style="width:${seats ? Math.round((seated / seats) * 100) : 0}%"></i></div></div>
+        </div>
+        <section class="card">
+          <div class="cardHead"><h3>Tables</h3><span>tap a table to open it, change the players or close it</span></div>
+          <div class="room">
+            ${nos.map((no) => {
+              const t = runningAt(no);
+              if (!t) return `<button class="ptable" data-no="${no}"><span class="pno">${no}</span><span class="pfoot"><span class="pgame">Closed</span><span class="plus">+ open</span></span></button>`;
+              const total = t.seats_total ?? DEFAULT_SEATS, taken = t.seats_taken ?? 0;
+              return `<button class="ptable on ${taken >= total ? "full" : ""}" style="background:radial-gradient(ellipse at 50% 30%, color-mix(in srgb, ${colorOf(t, gs)} 70%, white), ${colorOf(t, gs)})" data-no="${no}">
+                <span class="pno">${no}</span>
+                <span class="pgame">${esc(limitName(t))}</span>
+                <span class="pfoot">${dots(taken, total)}<span class="pseats">${taken}/${total}</span></span>
+              </button>`;
+            }).join("")}
+          </div>
+        </section>
+      </div>
+      <div class="col">
+        <section class="card">
+          <div class="cardHead"><h3>Seats taken</h3></div>
+          <div class="ringWrap">${ring(seats ? seated / seats : 0)}
+            <div class="ringInfo"><b>${seated} / ${seats}</b><span>${free} free seat${free === 1 ? "" : "s"} at ${open.length} open table${open.length === 1 ? "" : "s"}</span></div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="cardHead"><h3>Live games</h3></div>
+          <div class="live">
+            ${liveGames.length ? liveGames.map((g) => {
+              const p = g.open.reduce((a, t) => a + (t.seats_taken || 0), 0);
+              return `<div class="liveRow"><span class="swatch" style="background:${colorOf(g.sample, gs)}">${g.open.length}</span>
+                <div><b>${esc(limitName(g.sample))}</b><span>${g.open.length} table${g.open.length === 1 ? "" : "s"} · ${g.open.map((t) => "T" + t.table_no).join(", ")}</span></div>
+                <span class="num">${p}</span></div>`;
+            }).join("") : `<div class="empty">No game running right now.</div>`}
+          </div>
+        </section>
+      </div>
     </div>
-    <div class="grid">
-      ${gs.map((g, gi) => limitCard(g, gi)).join("")}
-      ${state.limitForm ? limitFormCard() : `<button class="add" id="addLimit">+ Add limit</button>`}
-    </div>
-    <div class="updated">Updated ${state.loadedAt ? state.loadedAt.toLocaleTimeString("en-GB") : "—"} · refreshes every 10 s · players see changes at once</div>`;
+    <div class="updated">Updated ${state.loadedAt ? state.loadedAt.toLocaleTimeString("en-GB") : "—"} · refreshes every 10 s · players see changes at once</div>
+    ${state.modal ? modalHtml(gs) : ""}`;
 
-  document.getElementById("out").onclick = () => sb.auth.signOut();
-  const toStaff = document.getElementById("toStaff");
-  if (toStaff) toStaff.onclick = async () => {
-    state.view = "staff";
-    try { await loadStaff(); } catch (e) { toast(e.message); }
-    render();
-  };
+  bindTopbar();
+  document.querySelectorAll(".ptable").forEach((b) => {
+    b.onclick = () => {
+      const no = Number(b.dataset.no);
+      const t = runningAt(no);
+      state.modal = t
+        ? { no, confirmClose: false, change: false }
+        : { no, key: gs[0] ? limitKey(gs[0].sample) : null, taken: 0, total: DEFAULT_SEATS };
+      render();
+    };
+  });
+  if (state.modal) bindModal(gs);
+}
+
+// Limits: every game the room offers, add or remove one
+function renderLimits() {
+  const gs = groups();
+  $app.innerHTML = `
+    ${topbar("limits")}
+    <div class="grid">
+      ${gs.map((g, gi) => `
+        <div class="limit">
+          <div class="lrow">
+            <span class="swatch" style="background:${colorOf(g.sample, gs)}">${g.open.length || ""}</span>
+            <div><div class="lname">${esc(limitName(g.sample))}</div><div class="hint">${esc(buyin(g.sample)) || "&nbsp;"}</div></div>
+            <button class="btn danger del" data-rm="${gi}">Remove</button>
+          </div>
+          <div class="hint">${g.open.length ? `Open now: ${g.open.map((t) => "T" + t.table_no).join(", ")}` : "No table open"}</div>
+        </div>`).join("")}
+      ${state.limitForm ? limitFormCard() : `<button class="limit" id="addLimit" style="align-items:center;justify-content:center;cursor:pointer;color:var(--pink);font-weight:800;border-style:dashed;min-height:110px">+ Add limit</button>`}
+    </div>`;
+  bindTopbar();
   const addL = document.getElementById("addLimit");
   if (addL) addL.onclick = () => { state.limitForm = true; render(); };
   bindLimitForm();
-
-  gs.forEach((g, gi) => {
-    const card = document.querySelector(`[data-g="${gi}"]`);
-    card.querySelector(".openBtn")?.addEventListener("click", () => { state.openForm = gi; render(); });
-    card.querySelector(".del")?.addEventListener("click", () => {
-      if (g.open.length) return toast("Close this limit's open tables first.");
-      if (!confirm(`Remove ${limitName(g.sample)} from the floor panel?`)) return;
+  document.querySelectorAll("[data-rm]").forEach((b) => {
+    const g = gs[Number(b.dataset.rm)];
+    b.onclick = () => {
+      if (g.open.length) return toast(`Close the ${limitName(g.sample)} tables first.`);
+      if (!confirm(`Remove ${limitName(g.sample)}?`)) return;
       act(() => floor("POST", { action: "remove-limit", tableId: g.sample.id }), "Limit removed");
-    });
-    g.open.forEach((t) => {
-      const el = card.querySelector(`[data-t="${t.id}"]`);
-      const total = t.seats_total ?? DEFAULT_SEATS;
-      const taken = t.seats_taken ?? 0;
-      el.querySelector(".minus").onclick = () => taken > 0 && act(() => setSeats(t, taken - 1, total));
-      el.querySelector(".plus").onclick = () => taken < total && act(() => setSeats(t, taken + 1, total));
-      el.querySelector(".max").onchange = (e) => {
-        const n = Number(e.target.value);
-        act(() => setSeats(t, Math.min(taken, n), n));
-      };
-      el.querySelector(".close").onclick = () => {
-        if (confirm(`Close table ${t.table_no}?`)) act(() => closeTable(t), `Table ${t.table_no} closed`);
-      };
-    });
-    if (state.openForm === gi) {
-      const f = card.querySelector(".form");
-      const no = f.querySelector(".no"), pl = f.querySelector(".pl"), mx = f.querySelector(".mx");
-      no.focus();
-      const submit = () => {
-        const n = parseInt(no.value, 10), p = parseInt(pl.value || "0", 10), m = Number(mx.value);
-        const err = f.querySelector(".err");
-        if (!n) return (err.textContent = "Enter the table number.");
-        if (p < 0 || p > m) return (err.textContent = `Players must be 0–${m}.`);
-        state.openForm = null;
-        act(() => openTable(g.sample.id, n, p, m), `Table ${n} opened`);
-      };
-      [no, pl].forEach((i) => i.addEventListener("keydown", (e) => e.key === "Enter" && submit()));
-      f.querySelector(".ok").onclick = submit;
-      f.querySelector(".cancel").onclick = () => { state.openForm = null; render(); };
-    }
+    };
   });
 }
 
-function limitCard(g, gi) {
-  const t0 = g.sample;
-  const open = [...g.open].sort((a, b) => a.table_no - b.table_no);
-  return `
-    <div class="limit ${open.length ? "live" : ""}" data-g="${gi}">
-      <div class="lhead">
-        <span class="lname">${esc(limitName(t0))}</span>
-        <span class="lmeta">${esc(buyin(t0))}</span>
-        <button class="del" title="Remove limit">×</button>
-      </div>
-      ${open.length ? `<div class="tables">${open.map(tableRow).join("")}</div>` : `<div class="closedNote">No table open</div>`}
-      ${state.openForm === gi ? openFormHtml() : `<div><button class="btn gold openBtn">+ Open table</button></div>`}
+function stepper(taken, total) {
+  return `<div class="stepper">
+      <button class="round big minus" title="One player less">−</button>
+      <b class="bigNum">${taken}<small>/${total}</small></b>
+      <button class="round big plus" title="One player more">+</button>
+    </div>
+    <div class="row" style="justify-content:center">
+      ${[6, 7, 8, 9, 10].map((n) => `<button class="maxBtn ${n === total ? "on" : ""}" data-max="${n}">${n}-max</button>`).join("")}
     </div>`;
 }
 
-function tableRow(t) {
-  const total = t.seats_total ?? DEFAULT_SEATS;
-  const taken = t.seats_taken ?? 0;
-  return `
-    <div class="tbl" data-t="${t.id}">
-      <div class="tno"><small>OPEN</small>T${t.table_no}</div>
-      <div class="seats">
-        <button class="round minus" title="One player less">−</button>
-        <b>${taken}/${total}</b>
-        <button class="round plus" title="One player more">+</button>
-      </div>
-      <select class="max" title="Seats at the table">
-        ${[6, 7, 8, 9, 10].map((n) => `<option value="${n}" ${n === total ? "selected" : ""}>${n}-max</option>`).join("")}
-      </select>
-      <button class="btn danger close">Close</button>
-    </div>`;
+function gameChips(gs, selectedKey, all) {
+  if (!gs.length) return `<div class="hint">No games yet — add one under Limits.</div>`;
+  return `<div class="games">${gs.map((g) => {
+    const k = limitKey(g.sample);
+    return `<button class="gameBtn ${k === selectedKey ? "on" : ""}" data-key="${esc(k)}"><span class="gdot" style="background:${colorOf(g.sample, all || gs)}"></span><span>${esc(limitName(g.sample))}<small>${esc(buyin(g.sample))}</small></span></button>`;
+  }).join("")}</div>`;
 }
 
-function openFormHtml() {
-  return `
-    <div class="form">
-      <div class="row">
-        <input class="no w90" inputmode="numeric" placeholder="Table no." />
-        <input class="pl w90" inputmode="numeric" placeholder="Players" />
-        <select class="mx">${[6, 7, 8, 9, 10].map((n) => `<option value="${n}" ${n === DEFAULT_SEATS ? "selected" : ""}>${n}-max</option>`).join("")}</select>
-      </div>
-      <div class="row">
-        <button class="btn gold ok">Open</button>
-        <button class="btn cancel">Cancel</button>
-      </div>
-      <div class="err"></div>
-    </div>`;
+function modalHtml(gs) {
+  const m = state.modal;
+  const t = runningAt(m.no);
+  if (!t) {
+    return `<div class="overlay"><div class="modal">
+      <div class="mhead"><div class="mtitle">Table ${m.no}</div><button class="mclose" title="Close">×</button></div>
+      <div class="mlabel">Game</div>
+      ${gameChips(gs, m.key)}
+      <div class="mlabel">Players at the table</div>
+      ${stepper(m.taken, m.total)}
+      <button class="btn gold wide" id="mOpen" ${m.key ? "" : "disabled"}>Open table ${m.no}</button>
+    </div></div>`;
+  }
+  const total = t.seats_total ?? DEFAULT_SEATS, taken = t.seats_taken ?? 0;
+  return `<div class="overlay"><div class="modal">
+    <div class="mhead"><span class="swatch" style="background:${colorOf(t, gs)}">${m.no}</span><div class="mtitle">Table ${m.no} <span class="openTag">OPEN</span></div><button class="mclose" title="Close">×</button></div>
+    <div class="mgame">${esc(limitName(t))} <span class="hint">${esc(buyin(t))}</span></div>
+    <div class="mlabel">Players at the table</div>
+    ${stepper(taken, total)}
+    ${m.change
+      ? `<div class="mlabel">Switch to</div>${gameChips(gs.filter((g) => limitKey(g.sample) !== limitKey(t)), m.key, gs)}
+         <div class="row"><button class="btn gold" id="mSwitch" ${m.key ? "" : "disabled"}>Switch game</button><button class="btn" id="mNoSwitch">Cancel</button></div>`
+      : `<button class="link" id="mChange" style="align-self:center">Change the game…</button>`}
+    ${m.confirmClose
+      ? `<div class="row" style="justify-content:center"><span>Close table ${m.no}?</span><button class="btn danger" id="mCloseYes">Yes, close it</button><button class="btn" id="mCloseNo">No</button></div>`
+      : `<button class="btn danger wide" id="mClose">Close table ${m.no}</button>`}
+  </div></div>`;
+}
+
+function bindModal(gs) {
+  const m = state.modal;
+  const t = runningAt(m.no);
+  const shut = () => { state.modal = null; render(); };
+  document.querySelector(".mclose").onclick = shut;
+  document.querySelector(".overlay").onclick = (e) => e.target.classList.contains("overlay") && shut();
+  document.querySelectorAll(".gameBtn").forEach((b) => (b.onclick = () => { m.key = b.dataset.key; render(); }));
+  const groupOf = (key) => gs.find((g) => limitKey(g.sample) === key);
+
+  if (!t) {
+    document.querySelector(".minus").onclick = () => { m.taken = Math.max(0, m.taken - 1); render(); };
+    document.querySelector(".plus").onclick = () => { m.taken = Math.min(m.total, m.taken + 1); render(); };
+    document.querySelectorAll(".maxBtn").forEach((b) => (b.onclick = () => { m.total = Number(b.dataset.max); m.taken = Math.min(m.taken, m.total); render(); }));
+    document.getElementById("mOpen").onclick = () => {
+      const g = groupOf(m.key);
+      if (!g) return;
+      const { no, taken, total } = m;
+      state.modal = null;
+      act(() => openTableAt(no, g, taken, total), `Table ${no} opened · ${limitName(g.sample)}`);
+    };
+    return;
+  }
+  const total = t.seats_total ?? DEFAULT_SEATS, taken = t.seats_taken ?? 0;
+  // the players change at once, the window stays open
+  document.querySelector(".minus").onclick = () => taken > 0 && act(() => setSeats(t, taken - 1, total));
+  document.querySelector(".plus").onclick = () => taken < total && act(() => setSeats(t, taken + 1, total));
+  document.querySelectorAll(".maxBtn").forEach((b) => (b.onclick = () => {
+    const n = Number(b.dataset.max);
+    act(() => setSeats(t, Math.min(taken, n), n));
+  }));
+  const ch = document.getElementById("mChange");
+  if (ch) ch.onclick = () => { m.change = true; m.key = null; render(); };
+  const ns = document.getElementById("mNoSwitch");
+  if (ns) ns.onclick = () => { m.change = false; render(); };
+  const sw = document.getElementById("mSwitch");
+  if (sw) sw.onclick = () => {
+    const g = groupOf(m.key);
+    if (!g) return;
+    m.change = false;
+    // close it under the old game, open it again under the new one, same players
+    act(async () => { await closeTable(t); await loadTables(); await openTableAt(m.no, groups().find((x) => limitKey(x.sample) === m.key) || g, taken, total); },
+      `Table ${m.no} · ${limitName(g.sample)}`);
+  };
+  const c = document.getElementById("mClose");
+  if (c) c.onclick = () => { m.confirmClose = true; render(); };
+  const cn = document.getElementById("mCloseNo");
+  if (cn) cn.onclick = () => { m.confirmClose = false; render(); };
+  const cy = document.getElementById("mCloseYes");
+  if (cy) cy.onclick = () => { const no = m.no; state.modal = null; act(() => closeTable(t), `Table ${no} closed`); };
 }
 
 function limitFormCard() {
@@ -559,6 +820,7 @@ function render() {
   if (!state.venue) return renderNoAccess();
   if (state.mustChange) return renderFirstPassword();
   if (state.view === "staff" && state.owner) return renderStaff();
+  if (state.view === "limits") return renderLimits();
   // keep typing intact: no full re-render while a form is being filled in
   renderPanel();
 }
@@ -579,7 +841,35 @@ async function start(session) {
   } catch (e) {
     toast(e.message);
   }
+  if (state.freshSignIn && state.venue) {
+    state.freshSignIn = false;
+    await playIntro(`Welcome ${state.name}`);
+  }
   render();
+}
+
+// The intro after signing in (Leo, 23.11): the logo alone, then "Welcome Ani
+// Raycheva" typed out letter by letter, then the floor panel.
+function playIntro(text) {
+  return new Promise((done) => {
+    const el = document.createElement("div");
+    el.className = "intro";
+    el.innerHTML = `<img class="introLogo" src="logo.png" alt="Palms Poker" /><div class="introText"><span class="typed"></span><span class="caret"></span></div>`;
+    document.body.appendChild(el);
+    const typed = el.querySelector(".typed");
+    let i = 0;
+    const finish = () => {
+      el.classList.add("out");
+      setTimeout(() => { el.remove(); done(); }, 450);
+    };
+    const type = () => {
+      typed.textContent = text.slice(0, ++i);
+      if (i < text.length) setTimeout(type, text[i - 1] === " " ? 140 : 75);
+      else setTimeout(finish, 1100);
+    };
+    setTimeout(type, 900); // the logo first
+    el.onclick = finish;   // a tap skips it
+  });
 }
 
 // a new sign-in or sign-out reloads; a silent token refresh only swaps the session
@@ -591,7 +881,7 @@ sb.auth.getSession().then(({ data }) => start(data.session));
 
 // live: other staff (or the app) change tables too
 setInterval(async () => {
-  if (!state.venue || state.view !== "cash" || state.busy || state.openForm !== null || state.limitForm || document.activeElement?.tagName === "INPUT") return;
+  if (!state.venue || state.view !== "cash" || state.busy || state.modal || state.limitForm || document.activeElement?.tagName === "INPUT") return;
   try { await loadTables(); render(); } catch {}
 }, 10000);
 </script>
