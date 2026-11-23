@@ -229,6 +229,23 @@
   @media (min-width: 1000px) and (max-height: 760px) {
     .fit .dots { display: none; }
   }
+
+  /* tournament tables (seating from PokerLens): gold rail, deep felt */
+  :root { --goldT: #f2c14e; }
+  .ptable.tour { color: #fff; border-color: #b8892a; background: radial-gradient(ellipse at 50% 30%, #4a3a8a, #241a55);
+    box-shadow: inset 0 0 0 2px rgba(242,193,78,.35), 0 8px 18px rgba(0,0,0,.4); }
+  .ptable.tour:hover { border-color: var(--goldT); }
+  .ptable .ptag { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--goldT); }
+  .ptable .pname { font-size: 11px; font-weight: 700; line-height: 1.15; max-width: 92%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .ptable.tour .pseats { color: var(--goldT); }
+  .tourSw { background: linear-gradient(135deg, #4a3a8a, #241a55); color: var(--goldT) !important; border: 1px solid #b8892a; }
+  .roomTotal { margin-top: 4px; padding: 10px 12px; border-radius: 14px; border: 1px dashed var(--border); display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .roomTotal b { font-size: 20px; }
+  .roomTotal span { color: var(--sec); font-size: 12px; }
+  @media (min-width: 1000px) and (min-height: 560px) {
+    .fit .ptable .pname { font-size: clamp(9px, 1.3vh, 11px); }
+    .fit .ptable .ptag { font-size: clamp(7px, 1vh, 9px); }
+  }
 </style>
 </head>
 <body>
@@ -288,11 +305,29 @@ const rake = (t) => t.rake_pct != null ? `Rake ${t.rake_pct}%${t.rake_cap != nul
 const buyin = (t) => [t.min_buyin ? `Buy-in ${CUR}${t.min_buyin}${t.max_buyin ? `–${CUR}${t.max_buyin}` : "+"}` : "", rake(t)].filter(Boolean).join(" · ");
 
 async function loadTables() {
-  const { data, error } = await sb.from("cash_tables").select("*").eq("venue_id", state.venue).order("bb").order("table_no");
-  if (error) throw error;
-  state.tables = data || [];
+  const [cash, tour] = await Promise.all([
+    sb.from("cash_tables").select("*").eq("venue_id", state.venue).order("bb").order("table_no"),
+    // tournaments in play right now: their seating comes from PokerLens (players[].t)
+    sb.from("tournament_live").select("id, name, status, entries, players_left, players")
+      .eq("venue_id", state.venue).in("status", ["running", "paused"]),
+  ]);
+  if (cash.error) throw cash.error;
+  state.tables = cash.data || [];
+  state.tourneys = (tour.data || []).map((r) => {
+    const byTable = new Map();
+    for (const p of r.players || []) if (!p.b && p.t != null) byTable.set(Number(p.t), (byTable.get(Number(p.t)) || 0) + 1);
+    return { id: r.id, name: r.name, status: r.status, entries: r.entries || 0, left: r.players_left || 0, byTable };
+  });
   state.loadedAt = new Date();
 }
+
+// the tournament playing at a table, and how many of its players sit there
+function tourneyAt(no) {
+  for (const t of state.tourneys || []) if (t.byTable.has(no)) return { t, count: t.byTable.get(no) };
+  return null;
+}
+// "Bwin Legends Main Event Day 1A" fits a table: the room's own series prefix stays
+const shortName = (n) => String(n || "").replace(/\s*\(.*?\)\s*/g, " ").trim();
 
 function groups() {
   const m = new Map();
@@ -427,7 +462,7 @@ function renderStaff() {
                 <b>${esc(u.name || u.username)}</b>${u.owner ? ` <span class="hint">· owner</span>` : ""}${u.me ? ` <span class="hint">· you</span>` : ""}
                 <div class="hint">${u.staff ? `Card ${esc(u.username)} · ` : ""}${u.last ? `last in ${new Date(u.last).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}` : "never signed in"}</div>
               </div>
-              ${u.staff && !u.owner ? `<button class="btn pw" title="Back to the card number backwards; they choose a new one at the next sign-in">Reset password</button><button class="btn danger rm">Remove</button>` : ""}
+              ${u.staff && !u.me ? `<button class="btn pw" title="Back to the card number backwards; they choose a new one at the next sign-in">Reset password</button>` : ""}${u.staff && !u.owner && !u.me ? `<button class="btn danger rm">Remove</button>` : ""}
             </div>`).join("")}
         </div>
       </div>
@@ -613,6 +648,12 @@ function renderPanel() {
   const extra = open.map((t) => t.table_no).filter((n) => n > TABLE_COUNT);
   const nos = [...Array.from({ length: TABLE_COUNT }, (_, i) => i + 1), ...new Set(extra)];
   const liveGames = gs.filter((g) => g.open.length);
+  const tourneys = state.tourneys || [];
+  const tourTables = tourneys.reduce((a, t) => a + t.byTable.size, 0);
+  const tourPlayers = tourneys.reduce((a, t) => a + t.left, 0);
+  // a tournament table past 30 shows too
+  for (const t of tourneys) for (const n of t.byTable.keys()) if (n > TABLE_COUNT && !nos.includes(n)) nos.push(n);
+  nos.sort((a, b) => a - b);
   const rows = Math.ceil(nos.length / 6);
   $app.classList.add("fit");
 
@@ -621,8 +662,8 @@ function renderPanel() {
     <div class="dash">
       <div class="col">
         <div class="kpis">
-          <div class="kpi pink"><small>Open tables</small><b>${open.length}</b><em>of ${TABLE_COUNT} in the room</em></div>
-          <div class="kpi blue"><small>Players</small><b>${seated}</b><em>${open.length ? `${(seated / open.length).toFixed(1)} per table` : "no game running"}</em></div>
+          <div class="kpi pink"><small>Open tables</small><b>${open.length}</b><em>cash${tourTables ? ` · +${tourTables} tournament` : ` · of ${TABLE_COUNT} in the room`}</em></div>
+          <div class="kpi blue"><small>Cash players</small><b>${seated}</b><em>${open.length ? `${(seated / open.length).toFixed(1)} per table` : "no game running"}</em></div>
           <div class="kpi dark"><small style="color:var(--sec)">Free seats</small><b>${free}</b><div class="bar"><i style="width:${seats ? Math.round((seated / seats) * 100) : 0}%"></i></div></div>
         </div>
         <section class="card">
@@ -630,6 +671,13 @@ function renderPanel() {
           <div class="room" style="--rows:${rows}">
             ${nos.map((no) => {
               const t = runningAt(no);
+              const tr = !t && tourneyAt(no);
+              if (tr) return `<button class="ptable tour" data-no="${no}" title="${esc(tr.t.name)}">
+                <span class="ptag">Tournament</span>
+                <span class="pno">${no}</span>
+                <span class="pname">${esc(shortName(tr.t.name))}</span>
+                <span class="pseats">${tr.count} player${tr.count === 1 ? "" : "s"}</span>
+              </button>`;
               if (!t) return `<button class="ptable" data-no="${no}"><span class="pno">${no}</span><span class="pfoot"><span class="pgame">Closed</span><span class="popen">+ open</span></span></button>`;
               const total = t.seats_total ?? DEFAULT_SEATS, taken = t.seats_taken ?? 0;
               return `<button class="ptable on ${taken >= total ? "full" : ""}" style="background:radial-gradient(ellipse at 50% 30%, color-mix(in srgb, ${colorOf(t, gs)} 70%, white), ${colorOf(t, gs)})" data-no="${no}">
@@ -646,6 +694,15 @@ function renderPanel() {
           <div class="cardHead"><h3>Seats taken</h3></div>
           <div class="ringWrap">${ring(seats ? seated / seats : 0)}
             <div class="ringInfo"><b>${seated} / ${seats}</b><span>${free} free seat${free === 1 ? "" : "s"} at ${open.length} open table${open.length === 1 ? "" : "s"}</span></div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="cardHead"><h3>Tournaments</h3>${tourneys.length ? `<span>${tourPlayers} players · ${tourTables} tables</span>` : ""}</div>
+          <div class="live">
+            ${tourneys.length ? tourneys.map((t) => `<div class="liveRow"><span class="swatch tourSw">${t.byTable.size}</span>
+                <div><b>${esc(shortName(t.name))}</b><span>${t.left} / ${t.entries} players · ${t.byTable.size} table${t.byTable.size === 1 ? "" : "s"}${t.status === "paused" ? " · paused" : ""}</span></div>
+                <span class="num">${t.left}</span></div>`).join("") : `<div class="empty">No tournament in play.</div>`}
+            ${tourneys.length || seated ? `<div class="roomTotal">In the room <b>${seated + tourPlayers}</b> <span>cash ${seated} · tournament ${tourPlayers}</span></div>` : ""}
           </div>
         </section>
         <section class="card">
@@ -669,6 +726,7 @@ function renderPanel() {
     b.onclick = () => {
       const no = Number(b.dataset.no);
       const t = runningAt(no);
+      if (!t && tourneyAt(no)) { state.modal = { no, tour: true }; return render(); }
       state.modal = t
         ? { no, confirmClose: false, change: false }
         : { no, key: gs[0] ? limitKey(gs[0].sample) : null, taken: 0, total: DEFAULT_SEATS };
@@ -730,6 +788,16 @@ function gameChips(gs, selectedKey, all) {
 
 function modalHtml(gs) {
   const m = state.modal;
+  if (m.tour) {
+    const tr = tourneyAt(m.no);
+    if (!tr) { state.modal = null; return ""; }
+    return `<div class="overlay"><div class="modal">
+      <div class="mhead"><span class="swatch tourSw">${m.no}</span><div class="mtitle">Table ${m.no} <span class="openTag" style="background:var(--goldT)">TOURNAMENT</span></div><button class="mclose" title="Close">×</button></div>
+      <div class="mgame">${esc(tr.t.name)}</div>
+      <div class="hint">${tr.count} player${tr.count === 1 ? "" : "s"} at this table · ${tr.t.left} / ${tr.t.entries} in the tournament</div>
+      <div class="hint">The tournament's tables come from the tournament clock (kHold'em / PokerLens) — they free up by themselves when the table breaks.</div>
+    </div></div>`;
+  }
   const t = runningAt(m.no);
   if (!t) {
     return `<div class="overlay"><div class="modal">
@@ -764,10 +832,11 @@ function bindModal(gs) {
   const M = document.querySelector(".modal");
   const one = (sel) => M.querySelector(sel);
   const all = (sel) => M.querySelectorAll(sel);
-  const t = runningAt(m.no);
   const shut = () => { state.modal = null; render(); };
   one(".mclose").onclick = shut;
   document.querySelector(".overlay").onclick = (e) => e.target.classList.contains("overlay") && shut();
+  if (m.tour) return;
+  const t = runningAt(m.no);
   all(".gameBtn").forEach((b) => (b.onclick = () => { m.key = b.dataset.key; render(); }));
   const groupOf = (key) => gs.find((g) => limitKey(g.sample) === key);
 
