@@ -72,7 +72,7 @@
   .cardTop .t2 { font-size: 22px; font-weight: 600; letter-spacing: .5px; line-height: 1.05; }
   .cname { font-size: 22px; font-weight: 800; margin: 18px 0 2px; line-height: 1.2; word-break: break-word; }
   .clabel { font-size: 11px; color: var(--sec); letter-spacing: 1.4px; text-transform: uppercase; font-weight: 700; margin-top: 14px; }
-  .cnum { font-size: 24px; font-weight: 700; letter-spacing: 3px; font-variant-numeric: tabular-nums; }
+  .cnum { font-size: 24px; font-weight: 700; letter-spacing: .5px; font-variant-numeric: tabular-nums; }
   .codeBox { background: var(--white); border-radius: 16px; margin-top: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .codeBox svg, .codeBox img { display: block; max-width: 100%; height: auto; }
   .codeBox .qr { width: 210px; height: 210px; image-rendering: pixelated; }
@@ -87,7 +87,6 @@
   .wbtn small { display: block; font-size: 10px; opacity: .8; }
   .wbtn b { font-size: 14px; }
   .soon { position: absolute; top: -8px; right: -6px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; }
-  .again { margin-top: 14px; width: 100%; }
 
   @media (max-width: 420px) {
     .brand .big { font-size: 32px; }
@@ -123,7 +122,6 @@ const T = {
     cardLabel: "Kortnummer", player: "Spillerkort",
     showQr: "Vis QR-koden i registreringen", showBar: "Vis strekkoden i registreringen",
     apple1: "Legg til i", apple2: "Apple Wallet", google1: "Lagre i", google2: "Google Wallet", soon: "Kommer snart",
-    again: "Lag et nytt kort",
   },
   en: {
     title: "Your digital player card",
@@ -137,7 +135,6 @@ const T = {
     cardLabel: "Card number", player: "Player card",
     showQr: "Show the QR code at registration", showBar: "Show the barcode at registration",
     apple1: "Add to", apple2: "Apple Wallet", google1: "Save to", google2: "Google Wallet", soon: "Coming soon",
-    again: "Make another card",
   },
 };
 let lang = (navigator.language || "").toLowerCase().startsWith("en") ? "en" : "no";
@@ -150,7 +147,6 @@ const NAME_OK = /^[\p{L}][\p{L}\p{M}' \-]*$/u;
 // "kari marie" → "Kari Marie", "hans-petter" → "Hans-Petter"; leaves "McDonald" alone
 const tidy = (s) => s.trim().replace(/\s+/g, " ").replace(/(^|[\s-])(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase());
 const fullName = () => [form.first, form.middle, form.last].map(tidy).filter(Boolean).join(" ");
-const grouped = (n) => n.replace(/(.{4})(?=.)/g, "$1 ");
 
 function renderForm() {
   const t = T[lang];
@@ -167,7 +163,7 @@ function renderForm() {
           <input id="last" autocomplete="family-name" value="${esc(form.last)}" placeholder="Hansen" /></div>
       </div>
       <label for="card">${t.card}</label>
-      <input id="card" inputmode="numeric" autocomplete="off" value="${esc(form.card)}" placeholder="0000 0000" />
+      <input id="card" inputmode="numeric" autocomplete="off" value="${esc(form.card)}" placeholder="10234567" />
       <div class="err" id="err"></div>
       <div class="actions">
         <button class="btn red" data-kind="qr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M21 14v7h-4M17 21v0"/></svg>${t.qr}</button>
@@ -176,7 +172,7 @@ function renderForm() {
       <div class="note">${t.note}</div>
     </div>`;
   ["first", "middle", "last", "card"].forEach((k) => $(k).addEventListener("input", (e) => (form[k] = e.target.value)));
-  $("card").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/[^\d ]/g, ""); form.card = e.target.value; });
+  $("card").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, ""); form.card = e.target.value; });
   document.querySelectorAll("[data-kind]").forEach((b) => (b.onclick = () => make(b.dataset.kind)));
 }
 
@@ -205,7 +201,7 @@ function renderCard() {
       <div class="clabel">${t.player}</div>
       <div class="cname">${esc(fullName())}</div>
       <div class="clabel">${t.cardLabel}</div>
-      <div class="cnum">${esc(grouped(n))}</div>
+      <div class="cnum">${esc(n)}</div>
       <div class="codeBox" id="code"></div>
       <div class="stripe"></div>
     </div>
@@ -216,8 +212,7 @@ function renderCard() {
       <button class="wbtn g" disabled title="${t.soon}"><span class="soon">${t.soon}</span>
         <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" fill="#4285f4"/><path d="M3 12h18v4a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z" fill="#34a853"/><path d="M3 9h18v3H3z" fill="#fbbc04"/><path d="M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v1H3z" fill="#ea4335"/></svg>
         <span><small>${t.google1}</small><b>${t.google2}</b></span></button>
-    </div>
-    <button class="btn ghost again" id="again">${t.again}</button>`;
+    </div>`;
   const box = $("code");
   if (made.kind === "qr") {
     // the QR holds just the card number, like the printed cards' codes
@@ -230,7 +225,6 @@ function renderCard() {
     box.innerHTML = `<svg id="bar"></svg><div class="codeHint">${t.showBar}</div>`;
     JsBarcode("#bar", n, { format: "CODE128", width: 2.4, height: 90, displayValue: false, margin: 4 });
   }
-  $("again").onclick = () => { made = null; renderForm(); };
 }
 
 function render() {
