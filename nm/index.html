@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>NM i Poker · Spillerkort</title>
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="apple-touch-icon" href="logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" />
+<!--
+  DEMO (Leo, 23.11) — a player card portal for Norgesmesterskapet i Poker:
+  the player types their name and card number, picks QR code or barcode, and
+  gets a digital card like the Palms app's. Wallet buttons are placeholders
+  for now (Apple / Google Wallet passes come later). Nothing is sent anywhere:
+  the card is drawn in the browser.
+  Names follow the Norwegian register: fornavn (one or more given names),
+  mellomnavn (optional) and etternavn, in that order.
+-->
+<style>
+  :root {
+    --navy: #0a1f55; --navy2: #132a73; --deep: #030814; --red: #ef4a62; --flagred: #ba0c2f;
+    --white: #ffffff; --silver1: #e9edf3; --silver2: #9aa3b2; --text: #eef2fa; --sec: #a9b4cc; --line: rgba(255,255,255,.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: "Open Sans", -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text);
+    background: radial-gradient(ellipse at 22% 30%, #0d2c74 0%, rgba(13,44,116,0) 55%),
+                radial-gradient(ellipse at 50% 100%, rgba(30,80,180,.25), rgba(0,0,0,0) 45%),
+                linear-gradient(160deg, #061637 0%, var(--deep) 70%);
+    background-attachment: fixed; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 28px 18px 48px; }
+  .lang { position: fixed; top: 14px; right: 14px; display: flex; gap: 4px; background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .lang button { border: 0; background: transparent; color: var(--sec); font: inherit; font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; cursor: pointer; }
+  .lang button.on { background: var(--white); color: var(--navy); }
+
+  .brand { display: flex; align-items: center; gap: 16px; margin: 10px 0 26px; }
+  .brand img { width: 84px; height: 84px; filter: drop-shadow(0 6px 18px rgba(0,0,0,.6)); }
+  .brand .small { font-size: 13px; font-weight: 600; letter-spacing: 2.4px; text-transform: uppercase; color: var(--white); }
+  .brand .big { font-size: 40px; font-weight: 600; line-height: 1; letter-spacing: 1px; color: var(--white); }
+  .flagbar { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--red) 0 30%, var(--white) 30% 38%, var(--navy2) 38% 62%, var(--white) 62% 70%, var(--red) 70%); margin-bottom: 22px; opacity: .9; }
+
+  .panel { background: rgba(10, 22, 60, .72); border: 1px solid var(--line); border-radius: 22px; padding: 22px; backdrop-filter: blur(8px); box-shadow: 0 20px 50px rgba(0,0,0,.45); }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 800; }
+  .lead { color: var(--sec); font-size: 14px; margin: 0 0 18px; }
+  label { display: block; font-size: 12px; font-weight: 700; color: var(--sec); margin: 12px 0 6px; letter-spacing: .3px; }
+  label .opt { font-weight: 400; color: #7f8aa6; }
+  input { width: 100%; font: inherit; font-size: 16px; color: var(--white); background: rgba(3,8,20,.55); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; }
+  input:focus { outline: 2px solid var(--red); outline-offset: -1px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .err { color: #ff8b9a; font-size: 13px; min-height: 18px; margin-top: 10px; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .btn { border: 0; border-radius: 14px; padding: 14px 10px; font: inherit; font-weight: 800; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn svg { width: 20px; height: 20px; }
+  .btn.red { background: var(--red); color: var(--white); box-shadow: 0 8px 20px rgba(239,74,98,.3); }
+  .btn.white { background: var(--white); color: var(--navy); }
+  .btn.ghost { background: transparent; color: var(--sec); border: 1px solid var(--line); }
+  .btn:hover { filter: brightness(1.06); }
+  .note { color: #7f8aa6; font-size: 12px; margin-top: 14px; text-align: center; }
+
+  /* the digital card */
+  .card { position: relative; overflow: hidden; border-radius: 22px; padding: 20px; color: var(--white);
+    background: radial-gradient(ellipse at 15% 0%, #1b3b92 0%, rgba(27,59,146,0) 60%), linear-gradient(155deg, #0c2463, #050c22 75%);
+    border: 1px solid rgba(255,255,255,.16); box-shadow: 0 24px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.12); }
+  .card::after { content: ""; position: absolute; right: -60px; top: -40px; width: 220px; height: 120px; transform: rotate(28deg);
+    background: linear-gradient(180deg, var(--red) 0 34%, var(--white) 34% 46%, transparent 46%); opacity: .85; }
+  .cardTop { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+  .cardTop img { width: 58px; height: 58px; }
+  .cardTop .t1 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+  .cardTop .t2 { font-size: 22px; font-weight: 600; letter-spacing: .5px; line-height: 1.05; }
+  .cname { font-size: 22px; font-weight: 800; margin: 18px 0 2px; line-height: 1.2; word-break: break-word; }
+  .clabel { font-size: 11px; color: var(--sec); letter-spacing: 1.4px; text-transform: uppercase; font-weight: 700; margin-top: 14px; }
+  .cnum { font-size: 24px; font-weight: 700; letter-spacing: 3px; font-variant-numeric: tabular-nums; }
+  .codeBox { background: var(--white); border-radius: 16px; margin-top: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .codeBox svg, .codeBox img { display: block; max-width: 100%; height: auto; }
+  .codeBox .qr { width: 210px; height: 210px; image-rendering: pixelated; }
+  .codeBox .codeHint { color: #4a556e; font-size: 11px; font-weight: 600; }
+  .stripe { height: 5px; margin: 16px -20px -20px; background: linear-gradient(90deg, var(--red) 0 40%, var(--white) 40% 46%, var(--navy2) 46% 54%, var(--white) 54% 60%, var(--red) 60%); }
+
+  .wallets { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+  .wbtn { position: relative; border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; background: #000; color: #fff; border: 1px solid #333; font: inherit; cursor: not-allowed; opacity: .9; }
+  .wbtn.g { background: #1f1f1f; }
+  .wbtn svg { width: 26px; height: 26px; flex: none; }
+  .wbtn span { text-align: left; line-height: 1.1; }
+  .wbtn small { display: block; font-size: 10px; opacity: .8; }
+  .wbtn b { font-size: 14px; }
+  .soon { position: absolute; top: -8px; right: -6px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; }
+  .again { margin-top: 14px; width: 100%; }
+
+  @media (max-width: 420px) {
+    .brand .big { font-size: 32px; }
+    .brand img { width: 68px; height: 68px; }
+    .row2, .actions, .wallets { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="lang"><button data-l="no" class="on">NO</button><button data-l="en">EN</button></div>
+<div class="wrap">
+  <div class="brand">
+    <img src="logo.png" alt="" />
+    <div><div class="small">Norgesmesterskapet</div><div class="big">I POKER</div></div>
+  </div>
+  <div class="flagbar"></div>
+  <div id="app"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script>
+const T = {
+  no: {
+    title: "Ditt digitale spillerkort",
+    lead: "Skriv inn navnet ditt slik det står i passet eller på ID-kortet, og nummeret på spillerkortet ditt.",
+    first: "Fornavn", middle: "Mellomnavn", optional: "(valgfritt)", last: "Etternavn", card: "Kortnummer",
+    qr: "Lag QR-kode", bar: "Lag strekkode",
+    note: "Ingenting lagres – kortet lages i nettleseren din.",
+    needFirst: "Skriv inn fornavnet ditt.", needLast: "Skriv inn etternavnet ditt.",
+    badName: "Navnet kan bare inneholde bokstaver, mellomrom, bindestrek og apostrof.",
+    needCard: "Kortnummeret må være 4–16 siffer.",
+    cardLabel: "Kortnummer", player: "Spillerkort",
+    showQr: "Vis QR-koden i registreringen", showBar: "Vis strekkoden i registreringen",
+    apple1: "Legg til i", apple2: "Apple Wallet", google1: "Lagre i", google2: "Google Wallet", soon: "Kommer snart",
+    again: "Lag et nytt kort",
+  },
+  en: {
+    title: "Your digital player card",
+    lead: "Enter your name as it appears on your passport or ID card, and the number on your player card.",
+    first: "First name(s)", middle: "Middle name", optional: "(optional)", last: "Last name", card: "Card number",
+    qr: "Generate QR code", bar: "Generate barcode",
+    note: "Nothing is stored – the card is made in your browser.",
+    needFirst: "Enter your first name.", needLast: "Enter your last name.",
+    badName: "Names can only contain letters, spaces, hyphens and apostrophes.",
+    needCard: "The card number must be 4–16 digits.",
+    cardLabel: "Card number", player: "Player card",
+    showQr: "Show the QR code at registration", showBar: "Show the barcode at registration",
+    apple1: "Add to", apple2: "Apple Wallet", google1: "Save to", google2: "Google Wallet", soon: "Coming soon",
+    again: "Make another card",
+  },
+};
+let lang = (navigator.language || "").toLowerCase().startsWith("en") ? "en" : "no";
+let form = { first: "", middle: "", last: "", card: "" };
+let made = null; // { kind: "qr" | "bar" }
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// letters of any alphabet (æ ø å, é …), spaces, hyphens, apostrophes
+const NAME_OK = /^[\p{L}][\p{L}\p{M}' \-]*$/u;
+// "kari marie" → "Kari Marie", "hans-petter" → "Hans-Petter"; leaves "McDonald" alone
+const tidy = (s) => s.trim().replace(/\s+/g, " ").replace(/(^|[\s-])(\p{Ll})/gu, (m, a, b) => a + b.toUpperCase());
+const fullName = () => [form.first, form.middle, form.last].map(tidy).filter(Boolean).join(" ");
+const grouped = (n) => n.replace(/(.{4})(?=.)/g, "$1 ");
+
+function renderForm() {
+  const t = T[lang];
+  $("app").innerHTML = `
+    <div class="panel">
+      <h1>${t.title}</h1>
+      <p class="lead">${t.lead}</p>
+      <label for="first">${t.first}</label>
+      <input id="first" autocomplete="given-name" value="${esc(form.first)}" placeholder="Kari Marie" />
+      <div class="row2">
+        <div><label for="middle">${t.middle} <span class="opt">${t.optional}</span></label>
+          <input id="middle" autocomplete="additional-name" value="${esc(form.middle)}" placeholder="Nordmann" /></div>
+        <div><label for="last">${t.last}</label>
+          <input id="last" autocomplete="family-name" value="${esc(form.last)}" placeholder="Hansen" /></div>
+      </div>
+      <label for="card">${t.card}</label>
+      <input id="card" inputmode="numeric" autocomplete="off" value="${esc(form.card)}" placeholder="0000 0000" />
+      <div class="err" id="err"></div>
+      <div class="actions">
+        <button class="btn red" data-kind="qr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M21 14v7h-4M17 21v0"/></svg>${t.qr}</button>
+        <button class="btn white" data-kind="bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5v14M7 5v14M11 5v14M13 5v14M17 5v14M20 5v14"/></svg>${t.bar}</button>
+      </div>
+      <div class="note">${t.note}</div>
+    </div>`;
+  ["first", "middle", "last", "card"].forEach((k) => $(k).addEventListener("input", (e) => (form[k] = e.target.value)));
+  $("card").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/[^\d ]/g, ""); form.card = e.target.value; });
+  document.querySelectorAll("[data-kind]").forEach((b) => (b.onclick = () => make(b.dataset.kind)));
+}
+
+function make(kind) {
+  const t = T[lang];
+  const err = $("err");
+  const digits = form.card.replace(/\D/g, "");
+  if (!form.first.trim()) return (err.textContent = t.needFirst);
+  if (!form.last.trim()) return (err.textContent = t.needLast);
+  for (const k of ["first", "middle", "last"]) if (form[k].trim() && !NAME_OK.test(form[k].trim())) return (err.textContent = t.badName);
+  if (digits.length < 4 || digits.length > 16) return (err.textContent = t.needCard);
+  form.card = digits;
+  made = { kind };
+  renderCard();
+}
+
+function renderCard() {
+  const t = T[lang];
+  const n = form.card;
+  $("app").innerHTML = `
+    <div class="card">
+      <div class="cardTop">
+        <img src="logo.png" alt="" />
+        <div><div class="t1">Norgesmesterskapet</div><div class="t2">I POKER</div></div>
+      </div>
+      <div class="clabel">${t.player}</div>
+      <div class="cname">${esc(fullName())}</div>
+      <div class="clabel">${t.cardLabel}</div>
+      <div class="cnum">${esc(grouped(n))}</div>
+      <div class="codeBox" id="code"></div>
+      <div class="stripe"></div>
+    </div>
+    <div class="wallets">
+      <button class="wbtn" disabled title="${t.soon}"><span class="soon">${t.soon}</span>
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" fill="#fff"/><rect x="3" y="8" width="18" height="3" fill="#f5a623"/><rect x="3" y="11" width="18" height="3" fill="#4cd964"/><rect x="3" y="14" width="18" height="3" fill="#ff3b30"/></svg>
+        <span><small>${t.apple1}</small><b>${t.apple2}</b></span></button>
+      <button class="wbtn g" disabled title="${t.soon}"><span class="soon">${t.soon}</span>
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" fill="#4285f4"/><path d="M3 12h18v4a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z" fill="#34a853"/><path d="M3 9h18v3H3z" fill="#fbbc04"/><path d="M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v1H3z" fill="#ea4335"/></svg>
+        <span><small>${t.google1}</small><b>${t.google2}</b></span></button>
+    </div>
+    <button class="btn ghost again" id="again">${t.again}</button>`;
+  const box = $("code");
+  if (made.kind === "qr") {
+    // the QR holds just the card number, like the printed cards' codes
+    const qr = qrcode(0, "M");
+    qr.addData(n);
+    qr.make();
+    box.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true }).replace("<svg ", '<svg class="qr" ');
+    box.insertAdjacentHTML("beforeend", `<div class="codeHint">${t.showQr}</div>`);
+  } else {
+    box.innerHTML = `<svg id="bar"></svg><div class="codeHint">${t.showBar}</div>`;
+    JsBarcode("#bar", n, { format: "CODE128", width: 2.4, height: 90, displayValue: false, margin: 4 });
+  }
+  $("again").onclick = () => { made = null; renderForm(); };
+}
+
+function render() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll(".lang button").forEach((b) => b.classList.toggle("on", b.dataset.l === lang));
+  made ? renderCard() : renderForm();
+}
+document.querySelectorAll(".lang button").forEach((b) => (b.onclick = () => { lang = b.dataset.l; render(); }));
+render();
+</script>
+</body>
+</html>
