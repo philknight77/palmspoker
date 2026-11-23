@@ -1,126 +1,928 @@
 <!doctype html>
-<html lang="bg">
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Palms Poker — свали приложението</title>
-<meta name="description" content="Турнири на живо, лайв клок, твоите резултати и Membership картата ти — Palms Royale Sofia.">
-<meta property="og:title" content="Palms Poker">
-<meta property="og:description" content="Турнири на живо, лайв клок, твоите резултати и Membership картата ти.">
-<meta property="og:image" content="https://philknight77.github.io/palmspoker/og.png">
-<meta property="og:type" content="website">
-<meta name="theme-color" content="#0b1530">
-<link rel="icon" href="icon.png">
-<link rel="apple-touch-icon" href="icon.png">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex" />
+<title>Palms Floor</title>
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="apple-touch-icon" href="logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+<!--
+  Palms Poker · floor panel for the cash games (Leo, 23.11) — the web twin of
+  the app's "⚙ Floor panel": open and close tables, players per table, limits.
+  Same Supabase project, same `floor` Edge Function, same rules: sign in with
+  the staff account (email code), and only venue_admins can change anything.
+  The anon key below is the public one the app ships with.
+-->
 <style>
+  /* Dark dashboard (Leo, 23.11 — after the "Fitness Tracker Dashboard, dark"
+     shot on Dribbble): near-black ground, soft dark cards, pastel cards with
+     dark ink for what matters, pill navigation, round icon buttons. */
   :root {
-    --bg1: #16284e; --bg2: #070d1c; --card: rgba(255,255,255,0.05); --line: rgba(255,255,255,0.12);
-    --text: #eef1f7; --sec: #9aa6bd; --gold: #e9c46a; --gold2: #f7e27a; --red: #c1202e;
+    --bg: #0e0e10; --panel: #17171a; --card: #1e1e22; --card2: #27272c; --border: rgba(255,255,255,.07);
+    --text: #f4f4f5; --sec: #a1a1aa; --muted: #6b6b75; --ink: #121215;
+    --pink: #f5c2e7; --blue: #cfe1f9; --lime: #e2f5b8; --peach: #fdd9bd; --lav: #dcd4ff; --mint: #c9f1df; --sun: #fbe9a6;
+    --gold: #f5c2e7; --goldText: #f5c2e7; --onGold: #121215;
+    --open: #86efac; --danger: #ff8a8a;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    min-height: 100vh; color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: radial-gradient(ellipse at 50% 30%, #2a3a64 0%, transparent 60%), linear-gradient(180deg, var(--bg1), var(--bg2));
-    background-attachment: fixed;
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  button, input, select, textarea { font: inherit; }
+  .wrap { max-width: 1760px; margin: 0 auto; padding: 18px 24px 48px; }
+  .link { background: none; border: 0; color: var(--pink); cursor: pointer; padding: 0; font-weight: 600; }
+
+  /* top bar */
+  .topbar { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .topbar .logo { width: 44px; height: 44px; flex: none; }
+  .nav { display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--border); padding: 5px; border-radius: 999px; }
+  .pill { border: 0; background: transparent; color: var(--sec); border-radius: 999px; padding: 8px 16px; cursor: pointer; font-weight: 700; font-size: 12px; letter-spacing: .6px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 7px; }
+  .pill:hover { color: var(--text); }
+  .pill.on { background: var(--pink); color: var(--ink); }
+  .pill svg { width: 15px; height: 15px; }
+  .tright { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .hello { text-align: right; line-height: 1.25; }
+  .hello b { display: block; font-size: 14px; }
+  .hello span { color: var(--sec); font-size: 12px; }
+  .iconBtn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border); background: var(--panel); color: var(--text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .iconBtn:hover { background: var(--card2); }
+  .iconBtn svg { width: 18px; height: 18px; }
+  .avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--text); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+
+  /* the dashboard grid */
+  .dash { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 22px; padding: 18px; }
+  .cardHead { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  .cardHead h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .cardHead span { color: var(--muted); font-size: 12px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .kpi { border-radius: 22px; padding: 18px; min-height: 118px; display: flex; flex-direction: column; justify-content: space-between; }
+  .kpi small { font-size: 12px; font-weight: 700; opacity: .75; }
+  .kpi b { font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+  .kpi em { font-style: normal; font-size: 12px; opacity: .7; }
+  .kpi.pink { background: var(--pink); color: var(--ink); }
+  .kpi.blue { background: var(--blue); color: var(--ink); }
+  .kpi.dark { background: var(--card); border: 1px solid var(--border); }
+  .bar { height: 8px; border-radius: 999px; background: var(--card2); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 999px; background: var(--lime); }
+
+  /* tables 1–30 */
+  .room { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+  /* a poker table seen from above (Leo, 23.11): an oval of felt inside a rail */
+  .ptable { position: relative; border: 7px solid #2c2c33; border-radius: 999px; aspect-ratio: 2 / 1; background: radial-gradient(ellipse at 50% 35%, #2a2a31, #1b1b20);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.05), 0 6px 14px rgba(0,0,0,.35); color: var(--muted); cursor: pointer;
+    padding: 6px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center;
+    transition: transform .12s ease, border-color .12s ease; }
+  .ptable:hover { transform: translateY(-2px); border-color: #3a3a43; }
+  .ptable .pno { font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -.5px; }
+  .ptable .pgame { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .ptable .pfoot { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .ptable .pseats { font-size: 12px; font-weight: 800; }
+  .ptable .popen { display: none; }
+  .ptable.on { color: var(--ink); border-color: #3b3b44; box-shadow: inset 0 0 0 2px rgba(255,255,255,.35), inset 0 -10px 24px rgba(0,0,0,.12), 0 8px 18px rgba(0,0,0,.4); }
+  .ptable.on .pgame { text-transform: none; letter-spacing: 0; font-size: 12px; }
+  .ptable.on:hover { border-color: #4a4a55; }
+  .dots { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
+  .dots i { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid currentColor; opacity: .45; }
+  .dots i.f { background: currentColor; opacity: .9; }
+  .full .pseats::after { content: " full"; font-weight: 700; }
+
+  /* right column */
+  .ringWrap { display: flex; align-items: center; gap: 18px; }
+  .ring { width: 118px; height: 118px; flex: none; }
+  .ring text { fill: var(--text); font-weight: 800; }
+  .ringInfo b { font-size: 20px; display: block; }
+  .ringInfo span { color: var(--sec); font-size: 12px; }
+  .live { display: flex; flex-direction: column; gap: 10px; }
+  .liveRow { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 16px; background: var(--card2); }
+  .swatch { width: 38px; height: 38px; border-radius: 12px; flex: none; display: inline-flex; align-items: center; justify-content: center; color: var(--ink); font-weight: 800; font-size: 13px; }
+  .liveRow b { display: block; font-size: 13px; }
+  .liveRow span { color: var(--sec); font-size: 12px; }
+  .liveRow .num { margin-left: auto; font-weight: 800; font-size: 16px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 6px 2px; }
+  .updated { color: var(--muted); font-size: 12px; margin-top: 16px; text-align: center; }
+
+  /* limits page */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
+  .limit { background: var(--card); border: 1px solid var(--border); border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .lname { font-size: 17px; font-weight: 800; }
+  .lrow { display: flex; align-items: center; gap: 12px; }
+  .lrow .del { margin-left: auto; }
+  .tables { display: flex; flex-direction: column; gap: 8px; }
+  .tbl { display: flex; align-items: center; gap: 10px; background: var(--card2); border-radius: 14px; padding: 10px 12px; flex-wrap: wrap; }
+
+  /* buttons and inputs */
+  .btn { border: 1px solid var(--border); background: var(--card2); color: var(--text); border-radius: 12px; padding: 9px 14px; cursor: pointer; font-weight: 700; }
+  .btn:hover { background: #33333a; }
+  .btn.gold { background: var(--pink); border-color: var(--pink); color: var(--ink); }
+  .btn.gold:hover { filter: brightness(1.05); }
+  .btn.danger { color: var(--danger); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input, select, textarea { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--pink); outline-offset: -1px; }
+  .w70 { width: 76px; } .w90 { width: 96px; } .w120 { width: 140px; }
+  .form { background: var(--card2); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .err { color: var(--danger); font-size: 13px; }
+  .hint { color: var(--muted); font-size: 12px; }
+
+  /* sign in */
+  .login { max-width: 380px; margin: 12vh auto 0; background: var(--card); border: 1px solid var(--border); border-radius: 26px; padding: 26px; display: flex; flex-direction: column; gap: 12px; }
+  .login .logo { width: 92px; height: 92px; align-self: center; margin-bottom: 4px; }
+  .login h2 { margin: 0; font-size: 22px; }
+  .login h2 span { color: var(--pink) !important; }
+  .login p { margin: 0; color: var(--sec); font-size: 14px; }
+  .login input { width: 100%; font-size: 16px; padding: 13px 14px; }
+  .login .btn { padding: 13px; font-size: 15px; }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--text); color: var(--ink); font-weight: 600; padding: 10px 18px; border-radius: 999px; font-size: 14px; display: none; max-width: calc(100% - 32px); z-index: 60; }
+
+  /* the window over a table */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .modal { width: 100%; max-width: 540px; max-height: calc(100vh - 24px); overflow: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .mhead { display: flex; align-items: center; gap: 10px; }
+  .mtitle { font-size: 19px; font-weight: 800; }
+  .openTag { font-size: 11px; color: var(--ink); background: var(--open); border-radius: 999px; padding: 2px 8px; vertical-align: middle; margin-left: 6px; font-weight: 800; }
+  .mclose { margin-left: auto; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); color: var(--sec); font-size: 20px; cursor: pointer; line-height: 1; }
+  .mgame { font-size: 17px; font-weight: 800; }
+  .mlabel { color: var(--sec); font-size: 11px; font-weight: 700; margin-top: 2px; }
+  .games { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .gameBtn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 12px; padding: 7px 9px; cursor: pointer; font-weight: 700; font-size: 12px; text-align: left; display: flex; gap: 8px; align-items: center; line-height: 1.25; }
+  .gameBtn small { display: block; color: var(--sec); font-weight: 500; font-size: 10px; }
+  .gameBtn .gdot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .gameBtn.on { outline: 2px solid var(--pink); background: var(--card2); }
+  .stepper { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .round { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--card2); color: var(--text); cursor: pointer; font-size: 18px; font-weight: 800; }
+  .round.big { width: 44px; height: 44px; font-size: 22px; }
+  .round:hover { background: #33333a; }
+  .bigNum { font-size: 34px; font-weight: 800; min-width: 80px; text-align: center; letter-spacing: -1px; }
+  .bigNum small { font-size: 18px; color: var(--sec); }
+  .maxBtn { background: transparent; border: 1px solid var(--border); color: var(--sec); border-radius: 999px; padding: 5px 11px; cursor: pointer; font-weight: 700; font-size: 12px; }
+  .maxBtn.on { background: var(--text); color: var(--ink); border-color: var(--text); }
+  .wide { width: 100%; padding: 11px; font-size: 15px; }
+
+  /* the intro after signing in */
+  .intro { position: fixed; inset: 0; z-index: 50; background: radial-gradient(ellipse at 50% 40%, #1c1c21, #0b0b0d 70%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; cursor: pointer; transition: opacity .45s ease; }
+  .intro.out { opacity: 0; }
+  .introLogo { width: min(220px, 48vw); height: auto; animation: introLogo .9s cubic-bezier(.2,.8,.2,1) both; filter: drop-shadow(0 0 28px rgba(242,193,78,.3)); }
+  @keyframes introLogo { from { opacity: 0; transform: scale(.7) rotate(-20deg); } to { opacity: 1; transform: none; } }
+  .introText { min-height: 1.3em; font-size: clamp(24px, 4.2vw, 46px); font-weight: 800; letter-spacing: -.5px; text-align: center; padding: 0 16px; }
+  .introText .typed { background: linear-gradient(90deg, #fff, var(--pink)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .caret { display: inline-block; width: 3px; height: 1em; margin-left: 4px; vertical-align: -0.12em; background: var(--pink); animation: blink .9s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  @media (min-width: 1500px) {
+    .ptable .pno { font-size: 32px; }
   }
-  main { max-width: 460px; margin: 0 auto; padding: 36px 20px 48px; text-align: center; }
-  .lang { position: absolute; top: 14px; right: 16px; }
-  .lang button { background: none; border: 1px solid var(--line); color: var(--sec); border-radius: 14px;
-    padding: 5px 10px; font-size: 13px; margin-left: 4px; cursor: pointer; }
-  .lang button.on { color: var(--gold); border-color: var(--gold); }
-  .logo { width: 132px; height: 132px; border-radius: 30px; box-shadow: 0 14px 40px rgba(0,0,0,.5), 0 0 60px rgba(233,196,106,.18); }
-  h1 { font-size: 30px; margin: 22px 0 4px; letter-spacing: .5px; }
-  .tag { color: var(--sec); font-size: 15px; margin: 0 0 26px; line-height: 1.45; }
-  .rule { width: 64px; height: 4px; background: var(--red); border-radius: 2px; margin: 14px auto 0; }
-  .box { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-top: 14px; text-align: left; }
-  .box h2 { font-size: 16px; margin: 0 0 12px; color: var(--gold); letter-spacing: .3px; }
-  .step { display: flex; gap: 12px; align-items: flex-start; margin: 14px 0; }
-  .num { flex: 0 0 28px; height: 28px; border-radius: 14px; background: var(--gold); color: #1c1406;
-    font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-  .step p { margin: 3px 0 8px; font-size: 15px; line-height: 1.4; }
-  .btn { display: block; text-align: center; text-decoration: none; font-weight: 800; font-size: 16px;
-    padding: 14px 16px; border-radius: 14px; color: #1c1406;
-    background: linear-gradient(135deg, #b07a10, var(--gold) 40%, var(--gold2) 55%, #d8a82a); box-shadow: 0 6px 20px rgba(233,196,106,.25); }
-  .btn.alt { background: none; color: var(--gold); border: 1.5px solid var(--gold); box-shadow: none; }
-  .note { color: var(--sec); font-size: 13px; line-height: 1.45; margin: 10px 0 0; }
-  .warn { color: #ffd27a; }
-  .hidden { display: none; }
-  .other { margin-top: 18px; font-size: 14px; }
-  .other a { color: var(--sec); }
-  footer { color: #6c7995; font-size: 12px; margin-top: 30px; line-height: 1.5; }
+  @media (max-width: 1180px) {
+    .dash { grid-template-columns: 1fr; }
+    .room { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  }
+  @media (max-width: 700px) {
+    .wrap { padding: 12px 12px 40px; }
+    .topbar { flex-wrap: wrap; gap: 10px; }
+    .nav { order: 3; width: 100%; justify-content: space-between; }
+    .pill { padding: 8px 10px; }
+    .hello { display: none; }
+    .kpis { gap: 10px; }
+    .kpi { padding: 14px; min-height: 96px; border-radius: 18px; }
+    .kpi b { font-size: 30px; }
+    .room { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .ptable { border-width: 5px; aspect-ratio: 1.6 / 1; padding: 4px 6px; }
+    .ptable .pno { font-size: 22px; }
+    .ptable.on .pgame { font-size: 10px; }
+    .dots { display: none; }
+    .games { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* a computer screen: the tables page fits the window, nothing to scroll
+     (Leo, 23.11) — the tables share whatever height is left */
+  @media (min-width: 1000px) and (min-height: 560px) {
+    .wrap.fit { height: 100vh; display: flex; flex-direction: column; padding: 14px 22px 8px; }
+    .fit .topbar { flex: none; margin-bottom: 12px; }
+    .fit .dash { flex: 1; min-height: 0; align-items: stretch; }
+    .fit .dash > .col { min-height: 0; }
+    .fit .dash > .col:first-child > .card { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 16px; }
+    .fit .cardHead { margin-bottom: 10px; }
+    .fit .kpis { flex: none; }
+    .fit .kpi { min-height: 0; padding: 12px 18px; gap: 4px; }
+    .fit .kpi b { font-size: clamp(26px, 4.2vh, 40px); }
+    .fit .room { flex: 1; min-height: 0; grid-template-rows: repeat(var(--rows), minmax(0, 1fr)); gap: clamp(6px, 1.2vh, 12px); }
+    .fit .ptable { aspect-ratio: auto; height: 100%; min-height: 0; border-width: clamp(4px, .8vh, 7px); padding: 2px 10px; gap: 1px; }
+    .fit .ptable .pno { font-size: clamp(16px, 3.4vh, 32px); }
+    .fit .ptable .pgame { font-size: clamp(9px, 1.4vh, 12px); }
+    .fit .ptable .pseats { font-size: clamp(10px, 1.5vh, 13px); }
+    .fit .dots i { width: clamp(4px, .7vh, 6px); height: clamp(4px, .7vh, 6px); }
+    .fit .dash > .col:last-child > .card:last-child { flex: 1; min-height: 0; overflow: auto; }
+    .fit .ring { width: clamp(80px, 14vh, 118px); height: clamp(80px, 14vh, 118px); }
+    .fit .updated { flex: none; margin-top: 6px; }
+  }
+  /* thin dark scrollbars (the Live games list when many games run) */
+  * { scrollbar-width: thin; scrollbar-color: #3a3a42 transparent; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #3a3a42; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  @media (min-width: 1000px) and (max-height: 760px) {
+    .fit .dots { display: none; }
+  }
 </style>
 </head>
 <body>
-<div class="lang"><button data-l="bg">BG</button><button data-l="en">EN</button></div>
-<main>
-  <img class="logo" src="icon.png" alt="Palms Poker">
-  <h1>Palms Poker</h1>
-  <div class="rule"></div>
-  <p class="tag" data-bg="Турнирите на живо, лайв клокът, твоите резултати и Membership картата ти — в едно приложение."
-                 data-en="Live tournaments, the live clock, your own results and your membership card — in one app."></p>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
 
-  <!-- iPhone -->
-  <section class="box" id="ios">
-    <h2 data-bg="iPhone — 2 стъпки" data-en="iPhone — 2 steps"></h2>
-    <div class="step"><div class="num">1</div><div style="flex:1">
-      <p data-bg="Свали безплатното приложение <b>TestFlight</b> на Apple." data-en="Get Apple's free <b>TestFlight</b> app."></p>
-      <a class="btn alt" href="https://apps.apple.com/app/testflight/id899247664" data-bg="Свали TestFlight" data-en="Get TestFlight"></a>
-    </div></div>
-    <div class="step"><div class="num">2</div><div style="flex:1">
-      <p data-bg="Отвори линка и натисни <b>Install</b>." data-en="Open the link and tap <b>Install</b>."></p>
-      <a class="btn" href="https://testflight.apple.com/join/5VeMSTRh" data-bg="Инсталирай Palms Poker" data-en="Install Palms Poker"></a>
-    </div></div>
-    <p class="note warn" data-bg="Не трий TestFlight — чрез него идват новите версии." data-en="Keep TestFlight — new versions come through it."></p>
-  </section>
-
-  <!-- Android -->
-  <section class="box" id="android">
-    <h2 data-bg="Android" data-en="Android"></h2>
-    <div class="step"><div class="num">1</div><div style="flex:1">
-      <p data-bg="Свали файла." data-en="Download the file."></p>
-      <a class="btn" href="https://github.com/philknight77/palmspoker/releases/latest/download/palms-poker.apk" data-bg="Свали Palms Poker" data-en="Download Palms Poker"></a>
-    </div></div>
-    <div class="step"><div class="num">2</div><div style="flex:1">
-      <p data-bg="Отвори го. Ако телефонът попита, разреши <b>„Инсталиране от този източник“</b> и натисни <b>Инсталирай</b>."
-         data-en="Open it. If the phone asks, allow <b>“Install from this source”</b> and tap <b>Install</b>."></p>
-    </div></div>
-    <p class="note" data-bg="Приложението се обновява само, без да го теглиш отново." data-en="The app updates itself — no need to download it again."></p>
-  </section>
-
-  <p class="other"><a href="#" id="showAll" data-bg="Покажи и другия телефон" data-en="Show the other phone too"></a></p>
-
-  <footer data-bg="Palms Royale Sofia · Grand Hotel Millennium<br>Хазартът носи риск от развиване на зависимост. 18+"
-          data-en="Palms Royale Sofia · Grand Hotel Millennium<br>Gambling can be addictive. 18+"></footer>
-</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-  // language: the phone's own, switchable
-  var lang = (navigator.language || "bg").toLowerCase().indexOf("bg") === 0 ? "bg" : "en";
-  try { lang = localStorage.getItem("lang") || lang; } catch (e) {}
-  function setLang(l) {
-    lang = l;
-    try { localStorage.setItem("lang", l); } catch (e) {}
-    document.documentElement.lang = l;
-    document.querySelectorAll("[data-" + l + "]").forEach(function (el) { el.innerHTML = el.getAttribute("data-" + l); });
-    document.querySelectorAll(".lang button").forEach(function (b) { b.classList.toggle("on", b.dataset.l === l); });
+const SUPABASE_URL = "https://kbpzqlkqorwstwdccsja.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImticHpxbGtxb3J3c3R3ZGNjc2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNjc1ODYsImV4cCI6MjA5ODk0MzU4Nn0.gYmjX4Uuv0RrGOePN8Gkk05uOWfos2EK0_7PDGM9bPE";
+const DEFAULT_SEATS = 8; // our tables are 8-max, as in the app
+const CUR = "€";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true } });
+const $app = document.getElementById("app");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+let state = { session: null, venues: [], venue: null, owner: false, tables: [], step: "email", email: "", busy: false,
+  modal: null, limitForm: false, err: "", loadedAt: null,
+  login: "password", // floor staff: username + password; the owner can use an email code
+  view: "cash", staff: null, name: "", mustChange: false };
+// staff accounts' made-up addresses (supabase/floor_staff.sql)
+const STAFF_DOMAIN = "staff.palmspoker.invalid";
+// a card number signs in as typed, leading zeros or not ("01652" = "1652")
+const toEmail = (u) => (u.includes("@") ? u : `${(/^\d+$/.test(u) ? u.replace(/^0+/, "") : u).toLowerCase()}@${STAFF_DOMAIN}`);
+// Supabase wants 6+ characters and Leo's first passwords are 4 digits (the
+// card number backwards), so the panel puts this in front of whatever is typed.
+const PW_PREFIX = "palms-floor:";
+const pw = (typed) => PW_PREFIX + typed;
+const backwards = (n) => String(n).split("").reverse().join("");
+const nameOf = (email) => ((email || "").endsWith("@" + STAFF_DOMAIN) ? email.split("@")[0] : email);
+
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  clearTimeout(toast.h); toast.h = setTimeout(() => (t.style.display = "none"), 3500);
+}
+
+async function floor(method, body) {
+  const { data } = await sb.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Not signed in");
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/floor`, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const p = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(p.error || `Request failed (${res.status})`);
+  return p;
+}
+
+const limitKey = (t) => `${t.game}|${t.sb}|${t.bb}`;
+// a Bomb Pot has one blind, an ante for everyone: "BOMB POT €5 ante"
+const limitName = (t) => (/bomb/i.test(t.game) ? `${t.game} ${CUR}${t.bb} ante` : `${t.game} ${CUR}${t.sb}/${CUR}${t.bb}`);
+const rake = (t) => t.rake_pct != null ? `Rake ${t.rake_pct}%${t.rake_cap != null ? ` cap ${CUR}${t.rake_cap}` : ""}` : t.rake_cap != null ? `Rake ${CUR}${t.rake_cap}` : "";
+const buyin = (t) => [t.min_buyin ? `Buy-in ${CUR}${t.min_buyin}${t.max_buyin ? `–${CUR}${t.max_buyin}` : "+"}` : "", rake(t)].filter(Boolean).join(" · ");
+
+async function loadTables() {
+  const { data, error } = await sb.from("cash_tables").select("*").eq("venue_id", state.venue).order("bb").order("table_no");
+  if (error) throw error;
+  state.tables = data || [];
+  state.loadedAt = new Date();
+}
+
+function groups() {
+  const m = new Map();
+  for (const t of state.tables) {
+    const k = limitKey(t);
+    const g = m.get(k) || { sample: t, open: [], rows: [] };
+    g.rows.push(t);
+    if (t.is_running) g.open.push(t);
+    m.set(k, g);
   }
-  document.querySelectorAll(".lang button").forEach(function (b) { b.onclick = function () { setLang(b.dataset.l); }; });
-  setLang(lang);
-  // the right phone first: an iPhone sees the iPhone steps, an Android the APK
-  var ua = navigator.userAgent || "";
-  var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  var isAndroid = /Android/.test(ua);
-  var other = document.getElementById("showAll");
-  if (isIOS) document.getElementById("android").classList.add("hidden");
-  else if (isAndroid) document.getElementById("ios").classList.add("hidden");
-  else other.parentNode.classList.add("hidden");
-  other.onclick = function (e) {
-    e.preventDefault();
-    document.getElementById("ios").classList.remove("hidden");
-    document.getElementById("android").classList.remove("hidden");
-    other.parentNode.classList.add("hidden");
+  return [...m.values()].sort((a, b) => a.sample.bb - b.sample.bb || a.sample.sb - b.sample.sb || a.sample.game.localeCompare(b.sample.game));
+}
+
+// ── actions (the same rules as the app's floor panel) ──
+async function openTable(sampleId, no, taken, total) {
+  const { table } = await floor("POST", { action: "add", fromTableId: sampleId, tableNo: no });
+  await floor("POST", { action: "seats", tableId: table.id, seats_taken: taken, seats_total: total });
+}
+async function closeTable(t) {
+  const same = state.tables.filter((x) => limitKey(x) === limitKey(t));
+  // the last row of a limit stays as its template, just switched off
+  if (same.length > 1) await floor("POST", { action: "remove", tableId: t.id });
+  else await floor("POST", { tableId: t.id, is_running: false });
+}
+async function setSeats(t, taken, total) {
+  await floor("POST", { action: "seats", tableId: t.id, seats_taken: taken, seats_total: total });
+}
+
+async function act(fn, okMsg) {
+  if (state.busy) return;
+  state.busy = true;
+  try {
+    await fn();
+    await loadTables();
+    if (okMsg) toast(okMsg);
+  } catch (e) {
+    toast(e.message || String(e));
+  } finally {
+    state.busy = false;
+    render();
+  }
+}
+
+// ── views ──
+function renderLogin() {
+  if (state.login === "password") {
+    $app.innerHTML = `
+      <div class="login">
+      <img class="logo" src="logo.png" alt="Palms Poker" />
+        <h2>Palms <span style="color:var(--goldText)">Floor</span></h2>
+        <p>Sign in with your card number and your password.</p>
+        <input id="user" autocomplete="username" autocapitalize="none" spellcheck="false" inputmode="numeric" placeholder="Card number" />
+        <input id="pass" type="password" autocomplete="current-password" placeholder="Password" />
+        <button class="btn gold" id="go">Sign in</button>
+        <button class="link" id="byCode">Sign in with an email code instead</button>
+        <div class="err">${esc(state.err)}</div>
+      </div>`;
+    const user = document.getElementById("user"), pass = document.getElementById("pass"), go = document.getElementById("go");
+    user.focus();
+    [user, pass].forEach((i) => i.addEventListener("keydown", (e) => e.key === "Enter" && go.click()));
+    document.getElementById("byCode").onclick = () => { state.login = "code"; state.step = "email"; state.err = ""; render(); };
+    go.onclick = async () => {
+      const u = user.value.trim();
+      if (!u || !pass.value) return;
+      go.disabled = true; state.err = "";
+      state.freshSignIn = true;
+      const { error } = await sb.auth.signInWithPassword({ email: toEmail(u), password: pw(pass.value) });
+      if (error) { state.err = /invalid/i.test(error.message) ? "Wrong card number or password." : error.message; render(); }
+    };
+    return;
+  }
+  const code = state.step === "code";
+  $app.innerHTML = `
+    <div class="login">
+      <img class="logo" src="logo.png" alt="Palms Poker" />
+      <h2>Palms <span style="color:var(--goldText)">Floor</span></h2>
+      <p>${code ? `Enter the 6-digit code sent to <b>${esc(state.email)}</b>.` : "Sign in with the email of your account in the app."}</p>
+      ${code
+        ? `<input id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="Code" maxlength="10" />
+           <button class="btn gold" id="go">Sign in</button>
+           <button class="link" id="back">Use another email</button>`
+        : `<input id="email" type="email" autocomplete="email" placeholder="Email" value="${esc(state.email)}" />
+           <button class="btn gold" id="go">Send code</button>`}
+      <button class="link" id="byPass">Sign in with card number and password</button>
+      <div class="err">${esc(state.err)}</div>
+    </div>`;
+  const go = document.getElementById("go");
+  const input = document.getElementById(code ? "code" : "email");
+  input.focus();
+  input.addEventListener("keydown", (e) => e.key === "Enter" && go.click());
+  document.getElementById("byPass").onclick = () => { state.login = "password"; state.err = ""; render(); };
+  if (code) document.getElementById("back").onclick = () => { state.step = "email"; state.err = ""; render(); };
+  go.onclick = async () => {
+    go.disabled = true; state.err = "";
+    try {
+      if (!code) {
+        state.email = input.value.trim();
+        // staff only: never creates an account
+        const { error } = await sb.auth.signInWithOtp({ email: state.email, options: { shouldCreateUser: false } });
+        if (error) throw error;
+        state.step = "code";
+      } else {
+        state.freshSignIn = true;
+        const { error } = await sb.auth.verifyOtp({ email: state.email, token: input.value.trim(), type: "email" });
+        if (error) throw error;
+        return; // onAuthStateChange takes over
+      }
+    } catch (e) {
+      state.err = /signups not allowed|not found/i.test(e.message) ? "This email has no account in the app." : e.message;
+    }
+    render();
   };
+}
+
+// ── Staff accounts (owner only): username + password for the other floor managers ──
+async function loadStaff() {
+  const { staff } = await floor("POST", { action: "staff-list", venueId: state.venue });
+  state.staff = staff || [];
+}
+
+function renderStaff() {
+  const list = state.staff || [];
+  $app.innerHTML = `
+    ${topbar("staff")}
+    <div class="grid">
+      <div class="limit">
+        <div class="lname">Floor accounts</div>
+        <div class="tables">
+          ${list.map((u) => `
+            <div class="tbl" data-u="${esc(u.id)}">
+              <div style="flex:1;min-width:0">
+                <b>${esc(u.name || u.username)}</b>${u.owner ? ` <span class="hint">· owner</span>` : ""}${u.me ? ` <span class="hint">· you</span>` : ""}
+                <div class="hint">${u.staff ? `Card ${esc(u.username)} · ` : ""}${u.last ? `last in ${new Date(u.last).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}` : "never signed in"}</div>
+              </div>
+              ${u.staff && !u.owner ? `<button class="btn pw" title="Back to the card number backwards; they choose a new one at the next sign-in">Reset password</button><button class="btn danger rm">Remove</button>` : ""}
+            </div>`).join("")}
+        </div>
+      </div>
+      <div class="limit">
+        <div class="lname">Add floor managers</div>
+        <div class="hint">One per line: card number – full name. They sign in with the card number; the first password is the number backwards (1652 → 2561), then they choose their own.</div>
+        <textarea id="bulk" rows="8" placeholder="1652 - Ani Raycheva&#10;48770 - Svetlin Tomov" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px;font:inherit;resize:vertical"></textarea>
+        <div class="row"><button class="btn gold" id="addStaff">Create accounts</button></div>
+        <div class="err" id="staffErr"></div>
+      </div>
+    </div>`;
+  bindTopbar();
+  document.getElementById("addStaff").onclick = () => {
+    const err = document.getElementById("staffErr");
+    const lines = document.getElementById("bulk").value.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    const people = [];
+    for (const l of lines) {
+      const m = l.match(/^(\d{2,12})\s*[-–—:,]?\s*(.+)$/);
+      if (!m) return (err.textContent = `Can't read: "${l}" — write it as 1652 - Ani Raycheva`);
+      people.push({ card: m[1].replace(/^0+/, ""), name: m[2].trim() });
+    }
+    if (!people.length) return (err.textContent = "Add at least one line.");
+    staffAct(async () => {
+      const done = [], failed = [];
+      for (const p of people) {
+        try {
+          await floor("POST", { action: "staff-add", venueId: state.venue, username: p.card, name: p.name, password: pw(backwards(p.card)) });
+          done.push(p.name);
+        } catch (e) {
+          failed.push(`${p.card} ${p.name}: ${e.message}`);
+        }
+      }
+      if (failed.length) alert(`Created ${done.length}. Not created:\n${failed.join("\n")}`);
+    }, `${people.length === 1 ? "Account" : "Accounts"} done`);
+  };
+  list.forEach((u) => {
+    const el = document.querySelector(`[data-u="${u.id}"]`);
+    el?.querySelector(".pw")?.addEventListener("click", () => {
+      if (confirm(`Reset ${u.name || u.username}'s password to the card number backwards (${backwards(u.username)})? They choose a new one at the next sign-in.`))
+        staffAct(() => floor("POST", { action: "staff-password", venueId: state.venue, userId: u.id, password: pw(backwards(u.username)) }), "Password reset");
+    });
+    el?.querySelector(".rm")?.addEventListener("click", () => {
+      if (confirm(`Remove ${u.name || u.username}? They can no longer sign in.`))
+        staffAct(() => floor("POST", { action: "staff-remove", venueId: state.venue, userId: u.id }), "Removed");
+    });
+  });
+}
+
+async function staffAct(fn, okMsg) {
+  if (state.busy) return;
+  state.busy = true;
+  try { await fn(); await loadStaff(); toast(okMsg); }
+  catch (e) { toast(e.message || String(e)); }
+  finally { state.busy = false; render(); }
+}
+
+// The first sign-in (or after the owner reset it): the card number backwards
+// is easy to guess, so each floor manager picks their own password once.
+function renderFirstPassword() {
+  $app.innerHTML = `
+    <div class="login">
+      <img class="logo" src="logo.png" alt="Palms Poker" />
+      <h2>Welcome, ${esc(state.name)}</h2>
+      <p>Choose your own password for the floor panel. You will use it from now on with your card number.</p>
+      <input id="p1" type="password" autocomplete="new-password" placeholder="New password (6+ characters)" />
+      <input id="p2" type="password" autocomplete="new-password" placeholder="New password again" />
+      <button class="btn gold" id="go">Save and continue</button>
+      <button class="link" id="out">Sign out</button>
+      <div class="err" id="fpErr"></div>
+    </div>`;
+  const p1 = document.getElementById("p1"), p2 = document.getElementById("p2"), go = document.getElementById("go");
+  p1.focus();
+  [p1, p2].forEach((i) => i.addEventListener("keydown", (e) => e.key === "Enter" && go.click()));
+  document.getElementById("out").onclick = () => sb.auth.signOut();
+  go.onclick = async () => {
+    const err = document.getElementById("fpErr");
+    const me = nameOf(state.session.user.email);
+    if (p1.value.length < 6) return (err.textContent = "At least 6 characters.");
+    if (p1.value !== p2.value) return (err.textContent = "The two passwords are not the same.");
+    if (p1.value === backwards(me)) return (err.textContent = "Choose something other than your card number backwards.");
+    go.disabled = true;
+    const { error } = await sb.auth.updateUser({ password: pw(p1.value), data: { must_change: false } });
+    if (error) { go.disabled = false; return (err.textContent = error.message); }
+    state.mustChange = false;
+    toast("Password saved");
+    render();
+  };
+}
+
+function renderNoAccess() {
+  $app.innerHTML = `
+    <div class="login">
+      <img class="logo" src="logo.png" alt="Palms Poker" />
+      <h2>No access</h2>
+      <p>${esc(nameOf(state.session?.user?.email))} is not a floor admin. Ask Leo to add this account.</p>
+      <button class="btn" id="out">Sign out</button>
+    </div>`;
+  document.getElementById("out").onclick = () => sb.auth.signOut();
+}
+
+// ── The room (Leo, 23.11): tables 1–30 as in the hall. Tap a closed one to
+// open it (game + players), tap an open one to change the players or close it.
+const TABLE_COUNT = 30;
+
+const runningAt = (no) => state.tables.find((t) => t.is_running && t.table_no === no);
+
+// open table `no` with limit group g: the same row comes back on if this
+// table had that game before, otherwise a new row (the floor function's "add")
+async function openTableAt(no, g, taken, total) {
+  if (runningAt(no)) throw new Error(`Table ${no} is already open`);
+  const before = g.rows.find((t) => !t.is_running && t.table_no === no);
+  let id;
+  if (before) {
+    await floor("POST", { tableId: before.id, is_running: true });
+    id = before.id;
+  } else {
+    const { table } = await floor("POST", { action: "add", fromTableId: g.sample.id, tableNo: no });
+    id = table.id;
+  }
+  await floor("POST", { action: "seats", tableId: id, seats_taken: taken, seats_total: total });
+}
+
+// pastel per game, in the order the limits are listed
+const PASTELS = ["var(--pink)", "var(--blue)", "var(--lime)", "var(--peach)", "var(--lav)", "var(--mint)", "var(--sun)"];
+const colorOf = (t, gs) => PASTELS[Math.max(0, gs.findIndex((g) => limitKey(g.sample) === limitKey(t))) % PASTELS.length];
+const ICON = {
+  tables: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="6"/></svg>`,
+  limits: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>`,
+  staff: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.6 3 5.2"/></svg>`,
+  out: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5M15 12H4"/></svg>`,
+};
+const initials = (n) => (n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+function topbar(view) {
+  const venueName = state.venue.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const pill = (v, label) => `<button class="pill ${view === v ? "on" : ""}" data-view="${v}">${ICON[v]}${label}</button>`;
+  return `
+    <div class="topbar">
+      <img class="logo" src="logo.png" alt="Palms Poker" />
+      <div class="nav">${pill("tables", "Tables")}${pill("limits", "Limits")}${state.owner ? pill("staff", "Staff") : ""}</div>
+      <div class="tright">
+        <div class="hello"><b>Welcome, ${esc(state.name)}</b><span>${esc(venueName)} · cash games</span></div>
+        <span class="avatar" title="${esc(state.name)}">${esc(initials(state.name))}</span>
+        <button class="iconBtn" id="out" title="Sign out">${ICON.out}</button>
+      </div>
+    </div>`;
+}
+
+function bindTopbar() {
+  document.getElementById("out").onclick = () => sb.auth.signOut();
+  document.querySelectorAll("[data-view]").forEach((b) => {
+    b.onclick = async () => {
+      const v = b.dataset.view;
+      state.view = v === "tables" ? "cash" : v;
+      state.modal = null;
+      if (v === "staff") { try { await loadStaff(); } catch (e) { toast(e.message); } }
+      render();
+    };
+  });
+}
+
+function dots(taken, total) {
+  return `<span class="dots">${Array.from({ length: total }, (_, i) => `<i class="${i < taken ? "f" : ""}"></i>`).join("")}</span>`;
+}
+
+function ring(pct) {
+  const r = 48, c = 2 * Math.PI * r, off = c * (1 - pct);
+  return `<svg class="ring" viewBox="0 0 120 120">
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--card2)" stroke-width="12"/>
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--lime)" stroke-width="12" stroke-linecap="round"
+      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="66" text-anchor="middle" font-size="22">${Math.round(pct * 100)}%</text>
+  </svg>`;
+}
+
+function renderPanel() {
+  const gs = groups();
+  const open = state.tables.filter((t) => t.is_running);
+  const seated = open.reduce((a, t) => a + (t.seats_taken || 0), 0);
+  const seats = open.reduce((a, t) => a + (t.seats_total ?? DEFAULT_SEATS), 0);
+  const free = Math.max(0, seats - seated);
+  // 1–30, and any open table numbered past that
+  const extra = open.map((t) => t.table_no).filter((n) => n > TABLE_COUNT);
+  const nos = [...Array.from({ length: TABLE_COUNT }, (_, i) => i + 1), ...new Set(extra)];
+  const liveGames = gs.filter((g) => g.open.length);
+  const rows = Math.ceil(nos.length / 6);
+  $app.classList.add("fit");
+
+  $app.innerHTML = `
+    ${topbar("tables")}
+    <div class="dash">
+      <div class="col">
+        <div class="kpis">
+          <div class="kpi pink"><small>Open tables</small><b>${open.length}</b><em>of ${TABLE_COUNT} in the room</em></div>
+          <div class="kpi blue"><small>Players</small><b>${seated}</b><em>${open.length ? `${(seated / open.length).toFixed(1)} per table` : "no game running"}</em></div>
+          <div class="kpi dark"><small style="color:var(--sec)">Free seats</small><b>${free}</b><div class="bar"><i style="width:${seats ? Math.round((seated / seats) * 100) : 0}%"></i></div></div>
+        </div>
+        <section class="card">
+          <div class="cardHead"><h3>Tables</h3><span>tap a table to open it, change the players or close it</span></div>
+          <div class="room" style="--rows:${rows}">
+            ${nos.map((no) => {
+              const t = runningAt(no);
+              if (!t) return `<button class="ptable" data-no="${no}"><span class="pno">${no}</span><span class="pfoot"><span class="pgame">Closed</span><span class="popen">+ open</span></span></button>`;
+              const total = t.seats_total ?? DEFAULT_SEATS, taken = t.seats_taken ?? 0;
+              return `<button class="ptable on ${taken >= total ? "full" : ""}" style="background:radial-gradient(ellipse at 50% 30%, color-mix(in srgb, ${colorOf(t, gs)} 70%, white), ${colorOf(t, gs)})" data-no="${no}">
+                <span class="pno">${no}</span>
+                <span class="pgame">${esc(limitName(t))}</span>
+                <span class="pfoot">${dots(taken, total)}<span class="pseats">${taken}/${total}</span></span>
+              </button>`;
+            }).join("")}
+          </div>
+        </section>
+      </div>
+      <div class="col">
+        <section class="card">
+          <div class="cardHead"><h3>Seats taken</h3></div>
+          <div class="ringWrap">${ring(seats ? seated / seats : 0)}
+            <div class="ringInfo"><b>${seated} / ${seats}</b><span>${free} free seat${free === 1 ? "" : "s"} at ${open.length} open table${open.length === 1 ? "" : "s"}</span></div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="cardHead"><h3>Live games</h3></div>
+          <div class="live">
+            ${liveGames.length ? liveGames.map((g) => {
+              const p = g.open.reduce((a, t) => a + (t.seats_taken || 0), 0);
+              return `<div class="liveRow"><span class="swatch" style="background:${colorOf(g.sample, gs)}">${g.open.length}</span>
+                <div><b>${esc(limitName(g.sample))}</b><span>${g.open.length} table${g.open.length === 1 ? "" : "s"} · ${g.open.map((t) => "T" + t.table_no).join(", ")}</span></div>
+                <span class="num">${p}</span></div>`;
+            }).join("") : `<div class="empty">No game running right now.</div>`}
+          </div>
+        </section>
+      </div>
+    </div>
+    <div class="updated">Updated ${state.loadedAt ? state.loadedAt.toLocaleTimeString("en-GB") : "—"} · refreshes every 10 s · players see changes at once</div>
+    ${state.modal ? modalHtml(gs) : ""}`;
+
+  bindTopbar();
+  document.querySelectorAll(".ptable").forEach((b) => {
+    b.onclick = () => {
+      const no = Number(b.dataset.no);
+      const t = runningAt(no);
+      state.modal = t
+        ? { no, confirmClose: false, change: false }
+        : { no, key: gs[0] ? limitKey(gs[0].sample) : null, taken: 0, total: DEFAULT_SEATS };
+      render();
+    };
+  });
+  if (state.modal) bindModal(gs);
+}
+
+// Limits: every game the room offers, add or remove one
+function renderLimits() {
+  const gs = groups();
+  $app.innerHTML = `
+    ${topbar("limits")}
+    <div class="grid">
+      ${gs.map((g, gi) => `
+        <div class="limit">
+          <div class="lrow">
+            <span class="swatch" style="background:${colorOf(g.sample, gs)}">${g.open.length || ""}</span>
+            <div><div class="lname">${esc(limitName(g.sample))}</div><div class="hint">${esc(buyin(g.sample)) || "&nbsp;"}</div></div>
+            <button class="btn danger del" data-rm="${gi}">Remove</button>
+          </div>
+          <div class="hint">${g.open.length ? `Open now: ${g.open.map((t) => "T" + t.table_no).join(", ")}` : "No table open"}</div>
+        </div>`).join("")}
+      ${state.limitForm ? limitFormCard() : `<button class="limit" id="addLimit" style="align-items:center;justify-content:center;cursor:pointer;color:var(--pink);font-weight:800;border-style:dashed;min-height:110px">+ Add limit</button>`}
+    </div>`;
+  bindTopbar();
+  const addL = document.getElementById("addLimit");
+  if (addL) addL.onclick = () => { state.limitForm = true; render(); };
+  bindLimitForm();
+  document.querySelectorAll("[data-rm]").forEach((b) => {
+    const g = gs[Number(b.dataset.rm)];
+    b.onclick = () => {
+      if (g.open.length) return toast(`Close the ${limitName(g.sample)} tables first.`);
+      if (!confirm(`Remove ${limitName(g.sample)}?`)) return;
+      act(() => floor("POST", { action: "remove-limit", tableId: g.sample.id }), "Limit removed");
+    };
+  });
+}
+
+function stepper(taken, total) {
+  return `<div class="stepper">
+      <button class="round big minus" title="One player less">−</button>
+      <b class="bigNum">${taken}<small>/${total}</small></b>
+      <button class="round big plus" title="One player more">+</button>
+    </div>
+    <div class="row" style="justify-content:center">
+      ${[6, 7, 8, 9, 10].map((n) => `<button class="maxBtn ${n === total ? "on" : ""}" data-max="${n}">${n}-max</button>`).join("")}
+    </div>`;
+}
+
+function gameChips(gs, selectedKey, all) {
+  if (!gs.length) return `<div class="hint">No games yet — add one under Limits.</div>`;
+  return `<div class="games">${gs.map((g) => {
+    const k = limitKey(g.sample);
+    return `<button class="gameBtn ${k === selectedKey ? "on" : ""}" data-key="${esc(k)}"><span class="gdot" style="background:${colorOf(g.sample, all || gs)}"></span><span>${esc(limitName(g.sample))}<small>${esc(buyin(g.sample))}</small></span></button>`;
+  }).join("")}</div>`;
+}
+
+function modalHtml(gs) {
+  const m = state.modal;
+  const t = runningAt(m.no);
+  if (!t) {
+    return `<div class="overlay"><div class="modal">
+      <div class="mhead"><div class="mtitle">Table ${m.no}</div><button class="mclose" title="Close">×</button></div>
+      <div class="mlabel">Game</div>
+      ${gameChips(gs, m.key)}
+      <div class="mlabel">Players at the table</div>
+      ${stepper(m.taken, m.total)}
+      <button class="btn gold wide" id="mOpen" ${m.key ? "" : "disabled"}>Open table ${m.no}</button>
+    </div></div>`;
+  }
+  const total = t.seats_total ?? DEFAULT_SEATS, taken = t.seats_taken ?? 0;
+  return `<div class="overlay"><div class="modal">
+    <div class="mhead"><span class="swatch" style="background:${colorOf(t, gs)}">${m.no}</span><div class="mtitle">Table ${m.no} <span class="openTag">OPEN</span></div><button class="mclose" title="Close">×</button></div>
+    <div class="mgame">${esc(limitName(t))} <span class="hint">${esc(buyin(t))}</span></div>
+    <div class="mlabel">Players at the table</div>
+    ${stepper(taken, total)}
+    ${m.change
+      ? `<div class="mlabel">Switch to</div>${gameChips(gs.filter((g) => limitKey(g.sample) !== limitKey(t)), m.key, gs)}
+         <div class="row"><button class="btn gold" id="mSwitch" ${m.key ? "" : "disabled"}>Switch game</button><button class="btn" id="mNoSwitch">Cancel</button></div>`
+      : `<button class="link" id="mChange" style="align-self:center">Change the game…</button>`}
+    ${m.confirmClose
+      ? `<div class="row" style="justify-content:center"><span>Close table ${m.no}?</span><button class="btn danger" id="mCloseYes">Yes, close it</button><button class="btn" id="mCloseNo">No</button></div>`
+      : `<button class="btn danger wide" id="mClose">Close table ${m.no}</button>`}
+  </div></div>`;
+}
+
+function bindModal(gs) {
+  const m = state.modal;
+  // look only inside the window: the room behind it has look-alike class names
+  // ("+ open" on a closed table took the + button's clicks, 23.11)
+  const M = document.querySelector(".modal");
+  const one = (sel) => M.querySelector(sel);
+  const all = (sel) => M.querySelectorAll(sel);
+  const t = runningAt(m.no);
+  const shut = () => { state.modal = null; render(); };
+  one(".mclose").onclick = shut;
+  document.querySelector(".overlay").onclick = (e) => e.target.classList.contains("overlay") && shut();
+  all(".gameBtn").forEach((b) => (b.onclick = () => { m.key = b.dataset.key; render(); }));
+  const groupOf = (key) => gs.find((g) => limitKey(g.sample) === key);
+
+  if (!t) {
+    one(".minus").onclick = () => { m.taken = Math.max(0, m.taken - 1); render(); };
+    one(".plus").onclick = () => { m.taken = Math.min(m.total, m.taken + 1); render(); };
+    all(".maxBtn").forEach((b) => (b.onclick = () => { m.total = Number(b.dataset.max); m.taken = Math.min(m.taken, m.total); render(); }));
+    one("#mOpen").onclick = () => {
+      const g = groupOf(m.key);
+      if (!g) return;
+      const { no, taken, total } = m;
+      state.modal = null;
+      act(() => openTableAt(no, g, taken, total), `Table ${no} opened · ${limitName(g.sample)}`);
+    };
+    return;
+  }
+  const total = t.seats_total ?? DEFAULT_SEATS, taken = t.seats_taken ?? 0;
+  // the players change at once, the window stays open
+  one(".minus").onclick = () => taken > 0 && act(() => setSeats(t, taken - 1, total));
+  one(".plus").onclick = () => taken < total && act(() => setSeats(t, taken + 1, total));
+  all(".maxBtn").forEach((b) => (b.onclick = () => {
+    const n = Number(b.dataset.max);
+    act(() => setSeats(t, Math.min(taken, n), n));
+  }));
+  const ch = one("#mChange");
+  if (ch) ch.onclick = () => { m.change = true; m.key = null; render(); };
+  const ns = one("#mNoSwitch");
+  if (ns) ns.onclick = () => { m.change = false; render(); };
+  const sw = one("#mSwitch");
+  if (sw) sw.onclick = () => {
+    const g = groupOf(m.key);
+    if (!g) return;
+    m.change = false;
+    // close it under the old game, open it again under the new one, same players
+    act(async () => { await closeTable(t); await loadTables(); await openTableAt(m.no, groups().find((x) => limitKey(x.sample) === m.key) || g, taken, total); },
+      `Table ${m.no} · ${limitName(g.sample)}`);
+  };
+  const c = one("#mClose");
+  if (c) c.onclick = () => { m.confirmClose = true; render(); };
+  const cn = one("#mCloseNo");
+  if (cn) cn.onclick = () => { m.confirmClose = false; render(); };
+  const cy = one("#mCloseYes");
+  if (cy) cy.onclick = () => { const no = m.no; state.modal = null; act(() => closeTable(t), `Table ${no} closed`); };
+}
+
+function limitFormCard() {
+  return `
+    <div class="limit" id="lf">
+      <div class="lname">New limit</div>
+      <div class="row">
+        <select id="lfGame"><option>NLH</option><option>PLO</option><option>MIX</option></select>
+        <input id="lfSb" class="w70" inputmode="decimal" placeholder="SB" />
+        <input id="lfBb" class="w70" inputmode="decimal" placeholder="BB" />
+      </div>
+      <div class="row">
+        <input id="lfMin" class="w120" inputmode="numeric" placeholder="Min buy-in" />
+        <input id="lfMax" class="w120" inputmode="numeric" placeholder="Max (empty = none)" />
+      </div>
+      <div class="row">
+        <input id="lfRake" class="w90" inputmode="decimal" placeholder="Rake %" />
+        <input id="lfCap" class="w90" inputmode="decimal" placeholder="Rake cap" />
+      </div>
+      <div class="row">
+        <button class="btn gold" id="lfSave">Save limit</button>
+        <button class="btn" id="lfCancel">Cancel</button>
+      </div>
+      <div class="err" id="lfErr"></div>
+      <div class="hint">A new limit starts closed — open its tables with “+ Open table”.</div>
+    </div>`;
+}
+
+function bindLimitForm() {
+  if (!state.limitForm) return;
+  const v = (id) => document.getElementById(id).value.trim();
+  const n = (id) => { const x = parseFloat(v(id).replace(",", ".")); return x > 0 ? x : null; };
+  document.getElementById("lfCancel").onclick = () => { state.limitForm = false; render(); };
+  document.getElementById("lfSave").onclick = () => {
+    const sbv = n("lfSb"), bbv = n("lfBb");
+    if (!sbv || !bbv || bbv < sbv) return (document.getElementById("lfErr").textContent = "Check the blinds — big blind must be ≥ small blind.");
+    state.limitForm = false;
+    act(() => floor("POST", { action: "add-limit", venueId: state.venue, game: v("lfGame"), sb: sbv, bb: bbv,
+      min_buyin: n("lfMin"), max_buyin: n("lfMax"), rake_pct: n("lfRake"), rake_cap: n("lfCap") }), "Limit added");
+  };
+}
+
+function render() {
+  $app.classList.remove("fit"); // only the tables page fills the screen
+  if (!state.session) return renderLogin();
+  if (!state.venue) return renderNoAccess();
+  if (state.mustChange) return renderFirstPassword();
+  if (state.view === "staff" && state.owner) return renderStaff();
+  if (state.view === "limits") return renderLimits();
+  // keep typing intact: no full re-render while a form is being filled in
+  renderPanel();
+}
+
+async function start(session) {
+  state.session = session;
+  if (!session) { state.venue = null; state.owner = false; state.step = "email"; state.login = "password"; return render(); }
+  $app.innerHTML = `<div class="updated">Loading…</div>`;
+  try {
+    const { venues, owner, name, mustChange } = await floor("GET");
+    state.name = name || nameOf(session.user.email);
+    state.mustChange = !!mustChange;
+    state.venues = venues || [];
+    state.venue = state.venues.includes("palms-royale-sofia") ? "palms-royale-sofia" : state.venues[0] || null;
+    state.owner = !!state.venue && (owner || []).includes(state.venue);
+    state.view = "cash";
+    if (state.venue) await loadTables();
+  } catch (e) {
+    toast(e.message);
+  }
+  if (state.freshSignIn && state.venue) {
+    state.freshSignIn = false;
+    await playIntro(`Welcome ${state.name}`);
+  }
+  render();
+}
+
+// The intro after signing in (Leo, 23.11): the logo alone, then "Welcome Ani
+// Raycheva" typed out letter by letter, then the floor panel.
+function playIntro(text) {
+  return new Promise((done) => {
+    const el = document.createElement("div");
+    el.className = "intro";
+    el.innerHTML = `<img class="introLogo" src="logo.png" alt="Palms Poker" /><div class="introText"><span class="typed"></span><span class="caret"></span></div>`;
+    document.body.appendChild(el);
+    const typed = el.querySelector(".typed");
+    let i = 0;
+    const finish = () => {
+      el.classList.add("out");
+      setTimeout(() => { el.remove(); done(); }, 450);
+    };
+    const type = () => {
+      typed.textContent = text.slice(0, ++i);
+      if (i < text.length) setTimeout(type, text[i - 1] === " " ? 140 : 75);
+      else setTimeout(finish, 1100);
+    };
+    setTimeout(type, 900); // the logo first
+    el.onclick = finish;   // a tap skips it
+  });
+}
+
+// a new sign-in or sign-out reloads; a silent token refresh only swaps the session
+sb.auth.onAuthStateChange((_e, session) => {
+  if ((session?.user?.id || null) !== (state.session?.user?.id || null)) start(session);
+  else state.session = session;
+});
+sb.auth.getSession().then(({ data }) => start(data.session));
+
+// live: other staff (or the app) change tables too
+setInterval(async () => {
+  if (!state.venue || state.view !== "cash" || state.busy || state.modal || state.limitForm || document.activeElement?.tagName === "INPUT") return;
+  try { await loadTables(); render(); } catch {}
+}, 10000);
 </script>
 </body>
 </html>
