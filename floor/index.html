@@ -235,10 +235,11 @@
   .ptable.tour { color: #fff; border-color: #b8892a; background: radial-gradient(ellipse at 50% 30%, #4a3a8a, #241a55);
     box-shadow: inset 0 0 0 2px rgba(242,193,78,.35), 0 8px 18px rgba(0,0,0,.4); }
   .ptable.tour:hover { border-color: var(--goldT); }
-  .ptable .ptag { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--goldT); }
+  .ptable .ptag { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,.85); }
   .ptable .pname { font-size: 11px; font-weight: 700; line-height: 1.15; max-width: 92%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .ptable.tour .pseats { color: var(--goldT); }
-  .tourSw { background: linear-gradient(135deg, #4a3a8a, #241a55); color: var(--goldT) !important; border: 1px solid #b8892a; }
+  .ptable.tour .pseats { color: #fff; }
+  .ptable.tour .pno, .ptable.tour .pname { text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+  .tourSw { background: linear-gradient(135deg, #4a3a8a, #241a55); color: #fff !important; border: 1px solid #b8892a; }
   .roomTotal { margin-top: 4px; padding: 10px 12px; border-radius: 14px; border: 1px dashed var(--border); display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   .roomTotal b { font-size: 20px; }
   .roomTotal span { color: var(--sec); font-size: 12px; }
@@ -253,6 +254,8 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<!-- the app's own tournament colours (src/eventTheme.ts, bundled — see web/build/themeEntry.ts) -->
+<script src="theme.js"></script>
 <script>
 const SUPABASE_URL = "https://kbpzqlkqorwstwdccsja.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImticHpxbGtxb3J3c3R3ZGNjc2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNjc1ODYsImV4cCI6MjA5ODk0MzU4Nn0.gYmjX4Uuv0RrGOePN8Gkk05uOWfos2EK0_7PDGM9bPE";
@@ -314,7 +317,7 @@ async function loadTables() {
   const [cash, tour] = await Promise.all([
     sb.from("cash_tables").select("*").eq("venue_id", state.venue).order("bb").order("table_no"),
     // tournaments in play right now: their seating comes from PokerLens (players[].t)
-    sb.from("tournament_live").select("id, name, status, entries, players_left, players")
+    sb.from("tournament_live").select("id, name, status, starts_at, venue_id, entries, players_left, players")
       .eq("venue_id", state.venue).in("status", ["running", "paused"]),
   ]);
   if (cash.error) throw cash.error;
@@ -322,7 +325,10 @@ async function loadTables() {
   state.tourneys = (tour.data || []).map((r) => {
     const byTable = new Map();
     for (const p of r.players || []) if (!p.b && p.t != null) byTable.set(Number(p.t), (byTable.get(Number(p.t)) || 0) + 1);
-    return { id: r.id, name: r.name, status: r.status, entries: r.entries || 0, left: r.players_left || 0, byTable };
+    // each tournament in its colour from the app's schedule (24.11)
+    let bar = ["#241a55", "#4a3a8a"];
+    try { bar = window.PalmsTheme.tourneyBar(r); } catch {}
+    return { id: r.id, name: r.name, status: r.status, entries: r.entries || 0, left: r.players_left || 0, byTable, bar };
   });
   state.loadedAt = new Date();
 }
@@ -685,7 +691,7 @@ function renderPanel() {
             ${nos.map((no) => {
               const t = runningAt(no);
               const tr = !t && tourneyAt(no);
-              if (tr) return `<button class="ptable tour" data-no="${no}" title="${esc(tr.t.name)}">
+              if (tr) return `<button class="ptable tour" data-no="${no}" title="${esc(tr.t.name)}" style="background:radial-gradient(ellipse at 50% 30%, ${tr.t.bar[1]}, ${tr.t.bar[0]})">
                 <span class="ptag">Tournament</span>
                 <span class="pno">${no}</span>
                 <span class="pname">${esc(shortName(tr.t.name))}</span>
@@ -712,7 +718,7 @@ function renderPanel() {
         <section class="card">
           <div class="cardHead"><h3>Tournaments</h3>${tourneys.length ? `<span>${tourPlayers} players · ${tourTables} tables</span>` : ""}</div>
           <div class="live">
-            ${tourneys.length ? tourneys.map((t) => `<div class="liveRow"><span class="swatch tourSw">${t.byTable.size}</span>
+            ${tourneys.length ? tourneys.map((t) => `<div class="liveRow"><span class="swatch tourSw" style="background:linear-gradient(135deg, ${t.bar[1]}, ${t.bar[0]})">${t.byTable.size}</span>
                 <div><b>${esc(shortName(t.name))}</b><span>${t.left} / ${t.entries} players · ${t.byTable.size} table${t.byTable.size === 1 ? "" : "s"}${t.status === "paused" ? " · paused" : ""}</span></div>
                 <span class="num">${t.left}</span></div>`).join("") : `<div class="empty">No tournament in play.</div>`}
             ${tourneys.length || seated ? `<div class="roomTotal">In the room <b>${seated + tourPlayers}</b> <span>cash ${seated} · tournament ${tourPlayers}</span></div>` : ""}
@@ -805,7 +811,7 @@ function modalHtml(gs) {
     const tr = tourneyAt(m.no);
     if (!tr) { state.modal = null; return ""; }
     return `<div class="overlay"><div class="modal">
-      <div class="mhead"><span class="swatch tourSw">${m.no}</span><div class="mtitle">Table ${m.no} <span class="openTag" style="background:var(--goldT)">TOURNAMENT</span></div><button class="mclose" title="Close">×</button></div>
+      <div class="mhead"><span class="swatch tourSw" style="background:linear-gradient(135deg, ${tr.t.bar[1]}, ${tr.t.bar[0]})">${m.no}</span><div class="mtitle">Table ${m.no} <span class="openTag" style="background:var(--goldT)">TOURNAMENT</span></div><button class="mclose" title="Close">×</button></div>
       <div class="mgame">${esc(tr.t.name)}</div>
       <div class="hint">${tr.count} player${tr.count === 1 ? "" : "s"} at this table · ${tr.t.left} / ${tr.t.entries} in the tournament</div>
       <div class="hint">The tournament's tables come from the tournament clock (kHold'em / PokerLens) — they free up by themselves when the table breaks.</div>
